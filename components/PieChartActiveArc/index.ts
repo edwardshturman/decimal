@@ -1,1 +1,0 @@
-export { PieChartActiveArc } from "./PieChartActiveArc"
