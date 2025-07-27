@@ -14,14 +14,8 @@ import {
   updateTransaction
 } from "@/functions/db/transactions"
 import { APP_NAME } from "@/lib/constants"
-import {
-  DetailedTransactionCategory,
-  PrimaryTransactionCategory,
-  Transaction
-} from "@/generated/prisma"
 import { Decimal } from "@prisma/client/runtime/library"
 import { createCursor, getCursor, updateCursor } from "@/functions/db/cursors"
-import { getDetailedCategories, getPrimaryCategories } from "./db/categories"
 
 if (!process.env.PLAID_CLIENT_ID) {
   throw new Error("Missing env var PLAID_CLIENT_ID")

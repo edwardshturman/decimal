@@ -53,8 +53,6 @@ export async function createTransaction(transaction: Transaction) {
   return await prisma.transaction.create({
     data: {
       accountId: transaction.accountId,
-      primaryTransactionCategoryId: transaction.primaryTransactionCategoryId,
-      detailedTransactionCategoryId: transaction.detailedTransactionCategoryId,
       id: transaction.id,
       name: transaction.name,
       date: transaction.date,
