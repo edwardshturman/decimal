@@ -25,9 +25,6 @@
     "**/*": "prettier --write --ignore-unknown"
   },
   "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
-    "@mui/x-charts": "^8.9.0",
     "@prisma/client": "6.10.1",
     "lucide-react": "^0.525.0",
     "next": "15.4.1",

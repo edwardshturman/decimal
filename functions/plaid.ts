@@ -86,39 +86,12 @@ export async function getAccounts(accessToken: string) {
 }
 
 function convertPlaidTransactionToDatabaseTransaction(
-  plaidTransaction: PlaidTransaction,
-  primaryCategories: PrimaryTransactionCategory[],
-  detailedCategories: DetailedTransactionCategory[]
+  plaidTransaction: PlaidTransaction
 ) {
-  const primaryCategoryName =
-    plaidTransaction.personal_finance_category?.primary
-  const detailedCategoryName =
-    plaidTransaction.personal_finance_category?.detailed
-
-  const primaryCategory = primaryCategoryName
-    ? primaryCategories.find(
-        (pCategory: PrimaryTransactionCategory) =>
-          pCategory.name === primaryCategoryName
-      )
-    : undefined
-
-  const detailedCategory = detailedCategoryName
-    ? detailedCategories.find(
-        (dCategory: DetailedTransactionCategory) =>
-          dCategory.name === detailedCategoryName
-      )
-    : undefined
-
   const newTransaction: Transaction = {
     name: plaidTransaction.original_description || plaidTransaction.name,
     id: plaidTransaction.transaction_id,
     accountId: plaidTransaction.account_id,
-    ...(primaryCategory && {
-      primaryTransactionCategoryId: primaryCategory.id
-    }),
-    ...(detailedCategory && {
-      detailedTransactionCategoryId: detailedCategory.id
-    }),
     currencyCode: plaidTransaction.iso_currency_code || "",
     amount: new Decimal(plaidTransaction.amount),
     date: new Date(plaidTransaction.authorized_date || plaidTransaction.date),
@@ -142,10 +115,6 @@ export async function syncTransactions(accessToken: string) {
   const cursorEntry = await getCursor(itemId)
   let cursor = cursorEntry?.string
 
-  // Load all the categories both primary and secondary
-  const primaryCategories = await getPrimaryCategories()
-  const detailedCategories = await getDetailedCategories()
-
   // Aggregate transactions since the last cursor
   let added: Transaction[] = []
   let modified: Transaction[] = []
@@ -165,20 +134,12 @@ export async function syncTransactions(accessToken: string) {
 
     added = added.concat(
       data.added.map((plaidTransaction: PlaidTransaction) =>
-        convertPlaidTransactionToDatabaseTransaction(
-          plaidTransaction,
-          primaryCategories,
-          detailedCategories
-        )
+        convertPlaidTransactionToDatabaseTransaction(plaidTransaction)
       )
     )
     modified = modified.concat(
       data.modified.map((plaidTransaction: PlaidTransaction) =>
-        convertPlaidTransactionToDatabaseTransaction(
-          plaidTransaction,
-          primaryCategories,
-          detailedCategories
-        )
+        convertPlaidTransactionToDatabaseTransaction(plaidTransaction)
       )
     )
     removed = removed.concat(data.removed)

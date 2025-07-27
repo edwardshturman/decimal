@@ -19,22 +19,3 @@ export async function createUser(user: CreateUserInput) {
     }
   })
 }
-
-export async function getUserIncludeItemsAccountsTransactions(userId: string) {
-  return prisma.user.findUnique({
-    where: {
-      id: userId
-    },
-    include: {
-      items: {
-        include: {
-          accounts: {
-            include: {
-              transactions: true
-            }
-          }
-        }
-      }
-    }
-  })
-}
