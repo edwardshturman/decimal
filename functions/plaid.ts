@@ -16,6 +16,7 @@ import {
 import { APP_NAME } from "@/lib/constants"
 import { Decimal } from "@prisma/client/runtime/library"
 import { createCursor, getCursor, updateCursor } from "@/functions/db/cursors"
+import { Transaction } from "@/generated/prisma"
 
 if (!process.env.PLAID_CLIENT_ID) {
   throw new Error("Missing env var PLAID_CLIENT_ID")
