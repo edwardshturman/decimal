@@ -19,8 +19,7 @@
     "start": "next start",
     "postinstall": "prisma generate",
     "migrate": "dotenv -e .env.local prisma migrate dev",
-    "refresh": "git pull && vc env pull",
-    "seed": "./scripts/category_importer/orchestrator.sh"
+    "refresh": "git pull && vc env pull"
   },
   "lint-staged": {
     "**/*": "prettier --write --ignore-unknown"
