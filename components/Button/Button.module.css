@@ -6,17 +6,17 @@ button.button {
   justify-content: center;
   align-items: center;
   padding: 12px 48px;
-  border: 2px dashed hsl(41.9deg, 20%, 57.8%, 1);
-  border-bottom: 2px dashed transparent;
-  border-radius: 4px;
-  box-shadow: 0px 4px 0px hsl(41.9deg, 20%, 57.8%, 1);
-
-  background-color: hsl(41.9deg, 20%, 57.8%, 0.2);
+  border: 2px dashed var(--color-olive);
+  background-color: var(--color-olive-20);
   color: var(--color-foreground);
+  transition:
+    box-shadow 0.3s ease,
+    background-color 0.3s ease,
+    scale 150ms ease;
 
   font-family: var(--font-mono);
   font-style: normal;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 1rem;
   line-height: 1.2em;
   letter-spacing: 0.02em;
@@ -24,10 +24,11 @@ button.button {
 }
 
 button.button:hover {
-  background-color: hsl(41.9deg, 20%, 57.8%, 0.1);
+  background-color: var(--color-olive-10);
+  box-shadow: inset 0px 0px 4px 4px var(--color-background);
 }
 
 button.button:active {
-  border: 2px dashed hsl(41.9deg, 20%, 57.8%, 1);
   box-shadow: none;
+  scale: 0.98;
 }
