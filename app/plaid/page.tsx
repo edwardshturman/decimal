@@ -1,14 +1,12 @@
 // Functions
 import { createLinkToken } from "@/functions/plaid"
+import { getOrCreateCurrentUser } from "@/lib/auth"
+import { getTransactionsAndAccounts } from "@/functions/db/transactions"
 
 // Components
 import { SignOut } from "@/components/SignOut"
 import { PlaidLink } from "@/components/PlaidLink"
 import { Transactions } from "@/components/Transactions"
-
-// Types
-import { getOrCreateCurrentUser } from "@/lib/auth"
-import { getTransactionsAndAccounts } from "@/functions/db/transactions"
 
 export default async function Plaid() {
   const user = await getOrCreateCurrentUser()

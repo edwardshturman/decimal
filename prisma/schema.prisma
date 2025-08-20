@@ -51,15 +51,8 @@ model Transaction {
   name         String
   pending      Boolean
   account      Account  @relation("AccountTransactions", fields: [accountId], references: [id])
-  labels       Label[]  @relation("TransactionLabels")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @default(now())
-}
-
-model Label {
-  id           String        @id @default(uuid())
-  name         String        @unique
-  transactions Transaction[] @relation("TransactionLabels")
 }
 
 model Cursor {
