@@ -1,4 +1,4 @@
-# Total
+# Decimal
 
 A minimalist, web-based expense tracker.
 

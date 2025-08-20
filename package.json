@@ -1,12 +1,12 @@
 {
-  "name": "total",
+  "name": "decimal",
   "author": "Edward Shturman",
   "version": "0.1.0",
   "license": "UNLICENSED",
   "description": "A minimalist, web-based expense tracker",
   "repository": {
     "type": "git",
-    "url": "https://github.com/edwardshturman/total.git"
+    "url": "https://github.com/edwardshturman/decimal.git"
   },
   "private": true,
   "scripts": {
