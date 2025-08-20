@@ -8,5 +8,5 @@ async function handleLoginWithGoogle() {
 }
 
 export function SignIn() {
-  return <Button onClick={handleLoginWithGoogle}>Login with Google</Button>
+  return <Button onClick={handleLoginWithGoogle}>Sign in with Google</Button>
 }
