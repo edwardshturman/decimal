@@ -1,5 +1,6 @@
 "use client"
 
+import { Button } from "@/components/Button"
 import { signIn } from "next-auth/react"
 
 async function handleLoginWithGoogle() {
@@ -7,5 +8,5 @@ async function handleLoginWithGoogle() {
 }
 
 export function SignIn() {
-  return <button onClick={handleLoginWithGoogle}>Login with Google</button>
+  return <Button onClick={handleLoginWithGoogle}>Sign in with Google</Button>
 }

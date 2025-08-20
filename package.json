@@ -32,7 +32,8 @@
     "plaid": "36.0.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "react-plaid-link": "4.0.1"
+    "react-plaid-link": "4.0.1",
+    "react-random-reveal": "2.0.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "3.3.1",

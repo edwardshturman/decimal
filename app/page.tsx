@@ -16,7 +16,9 @@ export default async function Home() {
   return (
     <>
       <h1>{APP_NAME}</h1>
-      <SignIn />
+      <div style={{ padding: "20px", display: "flex", gap: "16px" }}>
+        <SignIn />
+      </div>
     </>
   )
 }

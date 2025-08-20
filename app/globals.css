@@ -1,13 +1,15 @@
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --color-cream: hsla(42deg, 50%, 88%, 1);
+  --color-chai: hsla(42deg, 20%, 78%, 1);
+  --color-olive: hsla(42deg, 20%, 58%, 1);
+  --color-olive-20: hsla(42deg, 20%, 58%, 0.2);
+  --color-olive-10: hsla(42deg, 20%, 58%, 0.1);
+  --color-coal: hsl(42deg, 20%, 8%, 1);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-background: var(--color-cream);
+  --color-foreground: var(--color-coal);
+
+  --font-mono: var(--font-geist-mono), ui-monospace;
 }
 
 html,
@@ -17,8 +19,8 @@ body {
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  color: var(--color-foreground);
+  background: var(--color-background);
   font-family: Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -33,10 +35,4 @@ body {
 a {
   color: inherit;
   text-decoration: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
 }
