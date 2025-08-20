@@ -14,9 +14,9 @@ import {
   updateTransaction
 } from "@/functions/db/transactions"
 import { APP_NAME } from "@/lib/constants"
+import { Transaction } from "@/generated/prisma"
 import { Decimal } from "@prisma/client/runtime/library"
 import { createCursor, getCursor, updateCursor } from "@/functions/db/cursors"
-import { Transaction } from "@/generated/prisma"
 
 if (!process.env.PLAID_CLIENT_ID) {
   throw new Error("Missing env var PLAID_CLIENT_ID")
@@ -94,7 +94,7 @@ function convertPlaidTransactionToDatabaseTransaction(
     // TODO: use pending_transaction_id
     createdAt: new Date(),
     updatedAt: new Date()
-  } as Transaction
+  }
 
   return newTransaction
 }
@@ -128,14 +128,10 @@ export async function syncTransactions(accessToken: string) {
     const data = transactions.data
 
     added = added.concat(
-      data.added.map((plaidTransaction: PlaidTransaction) =>
-        convertPlaidTransactionToDatabaseTransaction(plaidTransaction)
-      )
+      data.added.map(convertPlaidTransactionToDatabaseTransaction)
     )
     modified = modified.concat(
-      data.modified.map((plaidTransaction: PlaidTransaction) =>
-        convertPlaidTransactionToDatabaseTransaction(plaidTransaction)
-      )
+      data.modified.map(convertPlaidTransactionToDatabaseTransaction)
     )
     removed = removed.concat(data.removed)
     hasMore = data.has_more
