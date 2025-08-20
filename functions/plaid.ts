@@ -95,7 +95,6 @@ function convertPlaidTransactionToDatabaseTransaction(
     createdAt: new Date(),
     updatedAt: new Date()
   }
-
   return newTransaction
 }
 
