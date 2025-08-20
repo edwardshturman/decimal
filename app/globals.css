@@ -1,7 +1,9 @@
 :root {
-  --color-cream: hsl(42deg, 50%, 88%, 1);
-  --color-chai: hsl(42deg, 20%, 78%, 1);
-  --color-olive: hsl(42deg, 20%, 58%, 1);
+  --color-cream: hsla(42deg, 50%, 88%, 1);
+  --color-chai: hsla(42deg, 20%, 78%, 1);
+  --color-olive: hsla(42deg, 20%, 58%, 1);
+  --color-olive-20: hsla(42deg, 20%, 58%, 0.2);
+  --color-olive-10: hsla(42deg, 20%, 58%, 0.1);
   --color-coal: hsl(42deg, 20%, 8%, 1);
 
   --color-background: var(--color-cream);
