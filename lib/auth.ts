@@ -1,6 +1,8 @@
 import NextAuth from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import type { NextAuthConfig, Session } from "next-auth"
+import { redirect, unauthorized } from "next/navigation"
+import { createUser, getUserByEmail } from "@/functions/db/users"
 
 if (!process.env.GOOGLE_CLIENT_ID) {
   throw new Error("Missing env var GOOGLE_CLIENT_ID")
@@ -61,4 +63,21 @@ export function isAuthorized(session: Session | null) {
   if (!whitelist.includes(userEmail)) return false
 
   return true
+}
+
+export async function getOrCreateCurrentUser() {
+  const session = await auth()
+  if (!session) redirect("/")
+  const authorized = isAuthorized(session)
+  if (!authorized) unauthorized()
+
+  let user = await getUserByEmail(session!.user!.email!)
+  if (!user) {
+    user = await createUser({
+      name: session!.user!.name!,
+      email: session!.user!.email!
+    })
+  }
+
+  return user
 }
