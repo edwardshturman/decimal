@@ -4,6 +4,7 @@ import { getOrCreateCurrentUser } from "@/lib/auth"
 import { getTransactionsAndAccounts } from "@/functions/db/transactions"
 
 // Components
+import { Inbox } from "@/components/Inbox"
 import { SignOut } from "@/components/SignOut"
 import { PlaidLink } from "@/components/PlaidLink"
 import { Transactions } from "@/components/Transactions"
@@ -23,7 +24,13 @@ export default async function Plaid() {
       {accounts.length === 0 ? (
         <PlaidLink linkToken={linkTokenResponse.link_token} userId={user.id} />
       ) : (
-        <Transactions initialTransactions={transactions} accounts={accounts} />
+        <>
+          <Inbox transactions={transactions.reverse()} />
+          <Transactions
+            initialTransactions={transactions}
+            accounts={accounts}
+          />
+        </>
       )}
       <SignOut />
     </>
