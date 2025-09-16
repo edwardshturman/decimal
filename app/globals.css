@@ -9,7 +9,8 @@
   --color-background: var(--color-cream);
   --color-foreground: var(--color-coal);
 
-  --font-mono: var(--font-geist-mono), ui-monospace;
+  --font-sans: var(--font-inter), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-roboto-mono), ui-monospace, monospace;
 }
 
 html,
@@ -21,7 +22,7 @@ body {
 body {
   color: var(--color-foreground);
   background: var(--color-background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
