@@ -3,12 +3,18 @@ main.page {
   margin: 100px auto;
 }
 
+header.header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
 h1.title {
   font-size: 3rem;
   font-weight: 500;
   color: var(--color-dark-blue);
   padding-left: 12px; /* Optically align with Inbox */
-  margin-bottom: 12px;
 }
 
 h1.title::before {

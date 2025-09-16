@@ -30,10 +30,12 @@ export default async function Plaid() {
   return (
     <>
       <main className={styles.page}>
-        <h1 className={styles.title}>{APP_NAME}</h1>
+        <header className={styles.header}>
+          <h1 className={styles.title}>{APP_NAME}</h1>
+          <SignOut />
+        </header>
         <PlaidLinkWrapper />
-        <Inbox transactions={transactions.reverse()} />
-        <SignOut />
+        <Inbox transactions={transactions.toReversed().slice(0, 10)} />
       </main>
     </>
   )
