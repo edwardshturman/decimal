@@ -35,7 +35,7 @@ export default async function Plaid() {
           <SignOut />
         </header>
         <PlaidLinkWrapper />
-        <Inbox transactions={transactions.reverse()} />
+        <Inbox transactions={transactions.toReversed().slice(0, 10)} />
       </main>
     </>
   )
