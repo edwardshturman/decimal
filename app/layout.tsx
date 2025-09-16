@@ -1,7 +1,16 @@
-import type { Metadata } from "next"
-import { Inter, Roboto_Mono } from "next/font/google"
+// Constants
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants"
+
+// Types
+import type { Metadata } from "next"
+
+// Styles
 import "./globals.css"
+import styles from "./Page.module.css"
+import { Inter, Roboto_Mono } from "next/font/google"
+
+// Components
+import { SignInOutWrapper } from "@/components/SignInOutWrapper"
 
 const inter = Inter({
   variable: "--font-inter",
@@ -25,7 +34,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} ${robotoMono.variable}`}>
-      <body>{children}</body>
+      <body className={styles.page}>
+        <header className={styles.header}>
+          <h1 className={styles.title}>{APP_NAME}</h1>
+          <SignInOutWrapper />
+        </header>
+        {children}
+      </body>
     </html>
   )
 }
