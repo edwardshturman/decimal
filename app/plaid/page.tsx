@@ -5,14 +5,10 @@ import { getTransactionsAndAccounts } from "@/functions/db/transactions"
 
 // Components
 import { Inbox } from "@/components/Inbox"
-import { SignOut } from "@/components/SignOut"
 import { PlaidLink } from "@/components/PlaidLink"
 
-// Constants
-import { APP_NAME } from "@/lib/constants"
-
 // Styles
-import styles from "./Plaid.module.css"
+import styles from "@/app/Page.module.css"
 
 export default async function Plaid() {
   const user = await getOrCreateCurrentUser()
@@ -30,10 +26,6 @@ export default async function Plaid() {
   return (
     <>
       <main className={styles.page}>
-        <header className={styles.header}>
-          <h1 className={styles.title}>{APP_NAME}</h1>
-          <SignOut />
-        </header>
         <PlaidLinkWrapper />
         <Inbox transactions={transactions.toReversed().slice(0, 10)} />
       </main>
