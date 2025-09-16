@@ -11,6 +11,6 @@ ol.list {
 
 .item:hover,
 .item:focus {
-  background-color: var(--color-olive-20);
+  background-color: var(--color-dark-blue-10);
   outline: none;
 }
