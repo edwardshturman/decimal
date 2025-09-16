@@ -7,7 +7,6 @@ import { getTransactionsAndAccounts } from "@/functions/db/transactions"
 import { Inbox } from "@/components/Inbox"
 import { SignOut } from "@/components/SignOut"
 import { PlaidLink } from "@/components/PlaidLink"
-import { Transactions } from "@/components/Transactions"
 
 export default async function Plaid() {
   const user = await getOrCreateCurrentUser()
@@ -26,10 +25,6 @@ export default async function Plaid() {
       ) : (
         <>
           <Inbox transactions={transactions.reverse()} />
-          <Transactions
-            initialTransactions={transactions}
-            accounts={accounts}
-          />
         </>
       )}
       <SignOut />
