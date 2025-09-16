@@ -6,10 +6,16 @@
   --color-olive-10: hsla(42deg, 20%, 58%, 0.1);
   --color-coal: hsl(42deg, 20%, 8%, 1);
 
-  --color-background: var(--color-cream);
-  --color-foreground: var(--color-coal);
+  --color-dark-blue: hsla(227deg, 50%, 22%, 1);
+  --color-dark-blue-10: hsla(227deg, 50%, 66%, 0.1);
+  --color-darker-blue: hsla(227deg, 50%, 10%, 1);
+  --color-blueish-white: hsla(227deg, 50%, 98%, 1);
 
-  --font-mono: var(--font-geist-mono), ui-monospace;
+  --color-background: var(--color-blueish-white);
+  --color-foreground: var(--color-darker-blue);
+
+  --font-sans: var(--font-inter), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-roboto-mono), ui-monospace, monospace;
 }
 
 html,
@@ -21,7 +27,7 @@ body {
 body {
   color: var(--color-foreground);
   background: var(--color-background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

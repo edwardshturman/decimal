@@ -6,8 +6,8 @@ button.button {
   justify-content: center;
   align-items: center;
   padding: 12px 48px;
-  border: 2px dashed var(--color-olive);
-  background-color: var(--color-olive-20);
+  border: 2px dashed var(--color-dark-blue);
+  background-color: var(--color-dark-blue-10);
   color: var(--color-foreground);
   transition:
     box-shadow 0.3s ease,
@@ -24,11 +24,10 @@ button.button {
 }
 
 button.button:hover {
-  background-color: var(--color-olive-10);
-  box-shadow: inset 0px 0px 4px 4px var(--color-background);
+  background-color: var(--color-dark-blue);
+  color: var(--color-background);
 }
 
 button.button:active {
-  box-shadow: none;
   scale: 0.98;
 }

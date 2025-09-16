@@ -8,26 +8,33 @@ import { Inbox } from "@/components/Inbox"
 import { SignOut } from "@/components/SignOut"
 import { PlaidLink } from "@/components/PlaidLink"
 
+// Constants
+import { APP_NAME } from "@/lib/constants"
+
+// Styles
+import styles from "./Plaid.module.css"
+
 export default async function Plaid() {
   const user = await getOrCreateCurrentUser()
-  const linkTokenResponse = await createLinkToken(user.id)
   const { accounts, transactions } = await getTransactionsAndAccounts(user.id)
+
+  async function PlaidLinkWrapper() {
+    if (accounts.length !== 0) return <></>
+    const linkTokenResponse = await createLinkToken(user.id)
+    return (
+      <PlaidLink linkToken={linkTokenResponse.link_token} userId={user.id} />
+    )
+  }
 
   // TODO: After the user connects their accounts, add a new option for "add a new account"
   return (
     <>
-      <p>
-        User: {user.name}, Email: {user.email}
-      </p>
-      <p>Link token: {linkTokenResponse.link_token}</p>
-      {accounts.length === 0 ? (
-        <PlaidLink linkToken={linkTokenResponse.link_token} userId={user.id} />
-      ) : (
-        <>
-          <Inbox transactions={transactions.reverse()} />
-        </>
-      )}
-      <SignOut />
+      <main className={styles.page}>
+        <h1 className={styles.title}>{APP_NAME}</h1>
+        <PlaidLinkWrapper />
+        <Inbox transactions={transactions.reverse()} />
+        <SignOut />
+      </main>
     </>
   )
 }
