@@ -5,22 +5,10 @@ import { decryptAccessToken } from "@/functions/crypto/utils"
 import type { Account, Transaction } from "@/generated/prisma"
 import { getAccounts, syncTransactions } from "@/functions/plaid"
 
-export type ClientFriendlyTransaction = Omit<Transaction, "amount"> & {
-  amount: number
-}
-
 export async function getTransactions(accountId: string) {
   return await prisma.transaction.findMany({
     where: { accountId }
   })
-}
-
-export function convertTransactionForClient(transaction: Transaction) {
-  const clientFriendlyTransaction: ClientFriendlyTransaction = {
-    ...transaction,
-    amount: transaction.amount.toNumber()
-  }
-  return clientFriendlyTransaction
 }
 
 export async function deleteTransaction(id: string) {
@@ -91,12 +79,6 @@ export async function getTransactionsAndAccounts(userId: string) {
       transactions.push(...accountTransactions)
     }
   }
-  const clientFriendlyTransactions = transactions.map(
-    convertTransactionForClient
-  )
 
-  return {
-    accounts,
-    transactions: clientFriendlyTransactions
-  }
+  return { accounts, transactions }
 }
