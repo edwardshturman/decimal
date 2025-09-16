@@ -46,7 +46,7 @@ model Transaction {
   id           String   @id
   accountId    String
   currencyCode String
-  amount       Decimal
+  amount       Float
   date         DateTime @default(now())
   name         String
   pending      Boolean

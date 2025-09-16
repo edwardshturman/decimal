@@ -11,30 +11,26 @@ import { useCallback, useLayoutEffect, useRef, useState } from "react"
 
 // Types
 import type { CSSProperties, KeyboardEvent, MouseEvent } from "react"
-import type { ClientFriendlyTransaction } from "@/functions/db/transactions"
 
 import styles from "./Inbox.module.css"
+import { Transaction } from "@/generated/prisma"
 
-export function Inbox({
-  transactions
-}: {
-  transactions: ClientFriendlyTransaction[]
-}) {
-  function handleSelect(transaction: ClientFriendlyTransaction) {
+export function Inbox({ transactions }: { transactions: Transaction[] }) {
+  function handleSelect(transaction: Transaction) {
     console.log(`Selected ${transaction.name}`)
   }
-  function handleSlash(transaction: ClientFriendlyTransaction) {
+  function handleSlash(transaction: Transaction) {
     console.log(`Toggled slash for ${transaction.name}`)
   }
   function handleClick(
     event: MouseEvent<HTMLLIElement>,
-    transaction: ClientFriendlyTransaction
+    transaction: Transaction
   ) {
     handleSelect(transaction)
   }
   function handleKeyDown(
     event: KeyboardEvent<HTMLLIElement>,
-    transaction: ClientFriendlyTransaction
+    transaction: Transaction
   ) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault()
