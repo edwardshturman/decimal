@@ -12,6 +12,13 @@ li.item {
   padding: 8px 16px;
   cursor: pointer;
   user-select: none;
+  display: flex;
+  flex-direction: row;
+  gap: 24px;
+
+  span.amount {
+    margin-left: auto;
+  }
 }
 
 li.item:focus {
