@@ -104,7 +104,23 @@ export function Inbox({
                 else delete liRefs.current[transaction.id]
               }}
             >
-              {transaction.name}
+              <span className={styles.date}>
+                {Intl.DateTimeFormat("en-US", {
+                  month: "2-digit",
+                  day: "2-digit",
+                  year:
+                    transaction.date.getFullYear() !== new Date().getFullYear()
+                      ? "numeric"
+                      : undefined
+                }).format(transaction.date)}
+              </span>
+              <span className={styles.name}>{transaction.name}</span>
+              <span className={styles.amount}>
+                {Intl.NumberFormat("en-US", {
+                  style: "currency",
+                  currency: transaction.currencyCode
+                }).format(transaction.amount)}
+              </span>
             </li>
           </RovingFocusGroupItem>
         ))}
