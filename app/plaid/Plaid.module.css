@@ -1,0 +1,18 @@
+main.page {
+  max-width: 700px;
+  margin: 100px auto;
+}
+
+h1.title {
+  font-size: 3rem;
+  font-weight: 500;
+  color: var(--color-dark-blue);
+  padding-left: 12px; /* Optically align with Inbox */
+  margin-bottom: 12px;
+}
+
+h1.title::before {
+  content: "●";
+  position: absolute;
+  margin-left: -48px;
+}
