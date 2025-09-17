@@ -51,7 +51,7 @@ export async function createTransaction(transaction: Transaction) {
   })
 }
 
-export async function getTransactionsAndAccounts(userId: string) {
+export async function getAccountsAndTransactions(userId: string) {
   const accounts: Account[] = []
   const transactions: Transaction[] = []
   const userItems = await getItems(userId)

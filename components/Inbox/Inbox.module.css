@@ -14,10 +14,16 @@ li.item {
   user-select: none;
   display: flex;
   flex-direction: row;
+  align-items: baseline;
   gap: 24px;
+
+  span.date {
+    color: var(--color-accent-text);
+  }
 
   span.amount {
     margin-left: auto;
+    color: var(--color-accent-text);
   }
 }
 
@@ -36,4 +42,15 @@ div.highlight {
     transform 100ms cubic-bezier(0.2, 0, 0.2, 1),
     height 100ms cubic-bezier(0.2, 0, 0.2, 1);
   will-change: transform, height;
+}
+
+div.chevron {
+  width: 24px;
+  height: 24px;
+  margin: auto;
+  transition: opacity 200ms ease-in;
+
+  svg {
+    fill: var(--color-foreground);
+  }
 }

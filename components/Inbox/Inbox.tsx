@@ -7,7 +7,13 @@ import {
 } from "@radix-ui/react-roving-focus"
 
 // Hooks
-import { useCallback, useLayoutEffect, useRef, useState } from "react"
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState
+} from "react"
 
 // Types
 import type { CSSProperties, KeyboardEvent, MouseEvent } from "react"
@@ -68,8 +74,59 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
     updateHighlight(activeId)
   }, [activeId, updateHighlight])
 
+  const ROW_COUNT = 11
+  const PAGINATE_UP_THRESHOLD = 2
+  const PAGINATE_DOWN_THRESHOLD = 8
+  const [paginationStart, setPaginationStart] = useState(0)
+  const [paginationEnd, setPaginationEnd] = useState(ROW_COUNT)
+  const [lastInput, setLastInput] = useState<"keyboard" | "mouse">()
+  useEffect(() => {
+    function handleKey() {
+      setLastInput("keyboard")
+    }
+    function handlePointerMove() {
+      setLastInput("mouse")
+    }
+    window.addEventListener("keydown", handleKey, { passive: true })
+    window.addEventListener("pointermove", handlePointerMove, { passive: true })
+    return () => {
+      window.removeEventListener("keydown", handleKey)
+      window.removeEventListener("pointermove", handlePointerMove)
+    }
+  }, [])
+
+  function computeOpacity(
+    transactions: Transaction[],
+    index: number,
+    paginationStart: number,
+    paginationEnd: number
+  ) {
+    if (index === ROW_COUNT - 1 && paginationEnd + 1 <= transactions.length)
+      return 0.4
+    if (index === ROW_COUNT - 2 && paginationEnd + 2 <= transactions.length)
+      return 0.6
+    if (index === ROW_COUNT - 3 && paginationEnd + 3 <= transactions.length)
+      return 0.8
+    if (index === 0 && paginationStart - index > 0) return 0.4
+    if (index === 1 && paginationStart - index > 0) return 0.6
+    if (index === 2 && paginationStart - index > 0) return 0.8
+    else return 1
+  }
+
   return (
     <RovingFocusGroup orientation="vertical">
+      <div
+        className={styles.chevron}
+        style={{ opacity: paginationStart > 0 ? 0.4 : 0 }}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M11.4697 9.46967C11.7626 9.17678 12.2374 9.17678 12.5303 9.46967L16.5303 13.4697C16.8232 13.7626 16.8232 14.2374 16.5303 14.5303C16.2374 14.8232 15.7626 14.8232 15.4697 14.5303L12 11.0607L8.53033 14.5303C8.23744 14.8232 7.76256 14.8232 7.46967 14.5303C7.17678 14.2374 7.17678 13.7626 7.46967 13.4697L11.4697 9.46967Z"
+          />
+        </svg>
+      </div>
       <ol
         className={styles.list}
         role="listbox"
@@ -77,50 +134,94 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
         ref={olRef}
       >
         <div className={styles.highlight} style={highlightStyles} />
-        {transactions.map((transaction, index) => (
-          <RovingFocusGroupItem
-            key={transaction.id}
-            asChild
-            focusable
-            autoFocus={index === 0}
-            onFocus={() => setActiveId(transaction.id)}
-          >
-            <li
-              className={styles.item}
-              onKeyDown={(e) => handleKeyDown(e, transaction)}
-              onClick={(e) => handleClick(e, transaction)}
-              onMouseEnter={() => {
+        {transactions
+          .sort((a, b) => b.date.getTime() - a.date.getTime())
+          .slice(paginationStart, paginationEnd)
+          .map((transaction, index) => (
+            <RovingFocusGroupItem
+              key={transaction.id}
+              asChild
+              focusable
+              autoFocus={index === 0}
+              onFocus={() => {
                 setActiveId(transaction.id)
-                liRefs.current[transaction.id]?.focus()
-              }}
-              role="option"
-              aria-selected={activeId === transaction.id}
-              ref={(li) => {
-                if (li) liRefs.current[transaction.id] = li
-                else delete liRefs.current[transaction.id]
+
+                if (lastInput !== "keyboard") return
+
+                // Go down when towards the bottom of the list
+                if (
+                  index >= PAGINATE_DOWN_THRESHOLD &&
+                  paginationEnd !== transactions.length
+                ) {
+                  setPaginationStart(paginationStart + 1)
+                  setPaginationEnd(paginationEnd + 1)
+                }
+
+                // Go up when towards the top of the list
+                if (index <= PAGINATE_UP_THRESHOLD && paginationStart !== 0) {
+                  setPaginationStart(paginationStart - 1)
+                  setPaginationEnd(paginationEnd - 1)
+                }
               }}
             >
-              <span className={styles.date}>
-                {Intl.DateTimeFormat("en-US", {
-                  month: "2-digit",
-                  day: "2-digit",
-                  year:
-                    transaction.date.getFullYear() !== new Date().getFullYear()
-                      ? "numeric"
-                      : undefined
-                }).format(transaction.date)}
-              </span>
-              <span className={styles.name}>{transaction.name}</span>
-              <span className={styles.amount}>
-                {Intl.NumberFormat("en-US", {
-                  style: "currency",
-                  currency: transaction.currencyCode
-                }).format(transaction.amount)}
-              </span>
-            </li>
-          </RovingFocusGroupItem>
-        ))}
+              <li
+                className={styles.item}
+                onKeyDown={(e) => handleKeyDown(e, transaction)}
+                onClick={(e) => handleClick(e, transaction)}
+                onMouseEnter={() => {
+                  if (lastInput !== "mouse") return
+                  setActiveId(transaction.id)
+                  liRefs.current[transaction.id]?.focus({ preventScroll: true })
+                }}
+                role="option"
+                aria-selected={activeId === transaction.id}
+                ref={(li) => {
+                  if (li) liRefs.current[transaction.id] = li
+                  else delete liRefs.current[transaction.id]
+                }}
+                style={{
+                  opacity: computeOpacity(
+                    transactions,
+                    index,
+                    paginationStart,
+                    paginationEnd
+                  )
+                }}
+              >
+                <span className={styles.date}>
+                  {Intl.DateTimeFormat("en-US", {
+                    month: "2-digit",
+                    day: "2-digit",
+                    year:
+                      transaction.date.getFullYear() !==
+                      new Date().getFullYear()
+                        ? "numeric"
+                        : undefined
+                  }).format(transaction.date)}
+                </span>
+                <span className={styles.name}>{transaction.name}</span>
+                <span className={styles.amount}>
+                  {Intl.NumberFormat("en-US", {
+                    style: "currency",
+                    currency: transaction.currencyCode
+                  }).format(transaction.amount)}
+                </span>
+              </li>
+            </RovingFocusGroupItem>
+          ))}
       </ol>
+      <div
+        className={styles.chevron}
+        style={{ opacity: paginationEnd < transactions.length ? 0.4 : 0 }}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M11.4697 14.5303C11.7626 14.8232 12.2374 14.8232 12.5303 14.5303L16.5303 10.5303C16.8232 10.2374 16.8232 9.76256 16.5303 9.46967C16.2374 9.17678 15.7626 9.17678 15.4697 9.46967L12 12.9393L8.53033 9.46967C8.23744 9.17678 7.76256 9.17678 7.46967 9.46967C7.17678 9.76256 7.17678 10.2374 7.46967 10.5303L11.4697 14.5303Z"
+          />
+        </svg>
+      </div>
     </RovingFocusGroup>
   )
 }
