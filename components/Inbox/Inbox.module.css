@@ -43,3 +43,14 @@ div.highlight {
     height 100ms cubic-bezier(0.2, 0, 0.2, 1);
   will-change: transform, height;
 }
+
+div.chevron {
+  width: 24px;
+  height: 24px;
+  margin: auto;
+  transition: opacity 200ms ease-in;
+
+  svg {
+    fill: var(--color-foreground);
+  }
+}
