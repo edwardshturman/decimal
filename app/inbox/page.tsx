@@ -1,7 +1,7 @@
 // Functions
 import { createLinkToken } from "@/functions/plaid"
 import { getOrCreateCurrentUser } from "@/lib/auth"
-import { getTransactionsAndAccounts } from "@/functions/db/transactions"
+import { getAccountsAndTransactions } from "@/functions/db/transactions"
 
 // Components
 import { Inbox } from "@/components/Inbox"
@@ -12,7 +12,7 @@ import styles from "@/app/Page.module.css"
 
 export default async function Plaid() {
   const user = await getOrCreateCurrentUser()
-  const { accounts, transactions } = await getTransactionsAndAccounts(user.id)
+  const { accounts, transactions } = await getAccountsAndTransactions(user.id)
 
   async function PlaidLinkWrapper() {
     if (accounts.length !== 0) return <></>
@@ -27,7 +27,7 @@ export default async function Plaid() {
     <>
       <main className={styles.page}>
         <PlaidLinkWrapper />
-        <Inbox transactions={transactions.toReversed().slice(0, 10)} />
+        <Inbox transactions={transactions} />
       </main>
     </>
   )
