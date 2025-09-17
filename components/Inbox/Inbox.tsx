@@ -7,7 +7,13 @@ import {
 } from "@radix-ui/react-roving-focus"
 
 // Hooks
-import { useCallback, useLayoutEffect, useRef, useState } from "react"
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState
+} from "react"
 
 // Types
 import type { CSSProperties, KeyboardEvent, MouseEvent } from "react"
@@ -73,6 +79,21 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
   const PAGINATE_DOWN_THRESHOLD = 8
   const [paginationStart, setPaginationStart] = useState(0)
   const [paginationEnd, setPaginationEnd] = useState(ROW_COUNT)
+  const [lastInput, setLastInput] = useState<"keyboard" | "mouse">()
+  useEffect(() => {
+    function handleKey() {
+      setLastInput("keyboard")
+    }
+    function handlePointerMove() {
+      setLastInput("mouse")
+    }
+    window.addEventListener("keydown", handleKey, { passive: true })
+    window.addEventListener("pointermove", handlePointerMove, { passive: true })
+    return () => {
+      window.removeEventListener("keydown", handleKey)
+      window.removeEventListener("pointermove", handlePointerMove)
+    }
+  }, [])
 
   function computeOpacity(
     transactions: Transaction[],
@@ -113,9 +134,11 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
               onFocus={() => {
                 setActiveId(transaction.id)
 
+                if (lastInput !== "keyboard") return
+
                 // Go down when towards the bottom of the list
                 if (
-                  index === PAGINATE_DOWN_THRESHOLD &&
+                  index >= PAGINATE_DOWN_THRESHOLD &&
                   paginationEnd !== transactions.length
                 ) {
                   setPaginationStart(paginationStart + 1)
@@ -123,7 +146,7 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
                 }
 
                 // Go up when towards the top of the list
-                if (index === PAGINATE_UP_THRESHOLD && paginationStart !== 0) {
+                if (index <= PAGINATE_UP_THRESHOLD && paginationStart !== 0) {
                   setPaginationStart(paginationStart - 1)
                   setPaginationEnd(paginationEnd - 1)
                 }
