@@ -157,8 +157,9 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
                 onKeyDown={(e) => handleKeyDown(e, transaction)}
                 onClick={(e) => handleClick(e, transaction)}
                 onMouseEnter={() => {
+                  if (lastInput !== "mouse") return
                   setActiveId(transaction.id)
-                  liRefs.current[transaction.id]?.focus()
+                  liRefs.current[transaction.id]?.focus({ preventScroll: true })
                 }}
                 role="option"
                 aria-selected={activeId === transaction.id}
