@@ -14,10 +14,16 @@ li.item {
   user-select: none;
   display: flex;
   flex-direction: row;
+  align-items: baseline;
   gap: 24px;
+
+  span.date {
+    color: var(--color-accent-text);
+  }
 
   span.amount {
     margin-left: auto;
+    color: var(--color-accent-text);
   }
 }
 
