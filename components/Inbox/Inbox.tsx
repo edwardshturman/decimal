@@ -95,24 +95,6 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
     }
   }, [])
 
-  function computeOpacity(
-    transactions: Transaction[],
-    index: number,
-    paginationStart: number,
-    paginationEnd: number
-  ) {
-    if (index === ROW_COUNT - 1 && paginationEnd + 1 <= transactions.length)
-      return 0.4
-    if (index === ROW_COUNT - 2 && paginationEnd + 2 <= transactions.length)
-      return 0.6
-    if (index === ROW_COUNT - 3 && paginationEnd + 3 <= transactions.length)
-      return 0.8
-    if (index === 0 && paginationStart - index > 0) return 0.4
-    if (index === 1 && paginationStart - index > 0) return 0.6
-    if (index === 2 && paginationStart - index > 0) return 0.8
-    else return 1
-  }
-
   return (
     <RovingFocusGroup orientation="vertical">
       <div
@@ -178,14 +160,6 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
                 ref={(li) => {
                   if (li) liRefs.current[transaction.id] = li
                   else delete liRefs.current[transaction.id]
-                }}
-                style={{
-                  opacity: computeOpacity(
-                    transactions,
-                    index,
-                    paginationStart,
-                    paginationEnd
-                  )
                 }}
               >
                 <span className={styles.date}>
