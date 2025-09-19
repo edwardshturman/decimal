@@ -27,6 +27,7 @@
   "dependencies": {
     "@prisma/client": "6.14.0",
     "@radix-ui/react-roving-focus": "1.1.11",
+    "motion": "12.23.15",
     "next": "15.5.0",
     "next-auth": "5.0.0-beta.25",
     "plaid": "38.0.0",

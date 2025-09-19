@@ -5,6 +5,7 @@ import {
   RovingFocusGroup,
   RovingFocusGroupItem
 } from "@radix-ui/react-roving-focus"
+import { motion } from "motion/react"
 
 // Hooks
 import {
@@ -16,6 +17,7 @@ import {
 } from "react"
 
 // Types
+import type { Variants } from "motion/react"
 import type { CSSProperties, KeyboardEvent, MouseEvent } from "react"
 
 import styles from "./Inbox.module.css"
@@ -48,12 +50,13 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
     }
   }
 
+  const ROW_HEIGHT = 38
   const [activeId, setActiveId] = useState(transactions[0].id)
   const olRef = useRef<HTMLOListElement>(null)
   const liRefs = useRef<Record<string, HTMLElement>>({})
   const [highlightStyles, setHighlightStyles] = useState<CSSProperties>({
     transform: "translateY(0px)",
-    height: "38px" // rough estimation of single-line item height
+    height: `${ROW_HEIGHT}px`
   })
 
   const updateHighlight = useCallback((id: string) => {
@@ -74,11 +77,29 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
     updateHighlight(activeId)
   }, [activeId, updateHighlight])
 
+  const [hasMounted, setHasMounted] = useState(false)
+  useEffect(() => setHasMounted(true), [])
+  const variants: Variants = {
+    enter: (direction: "up" | "down") => ({
+      opacity: 0,
+      y: direction === "down" ? ROW_HEIGHT : -ROW_HEIGHT
+    }),
+    center: {
+      opacity: 1,
+      y: 0
+    },
+    exit: (direction: "up" | "down") => ({
+      opacity: 0,
+      y: direction === "down" ? -ROW_HEIGHT : ROW_HEIGHT
+    })
+  }
+
   const ROW_COUNT = 11
   const PAGINATE_UP_THRESHOLD = 2
   const PAGINATE_DOWN_THRESHOLD = 8
   const [paginationStart, setPaginationStart] = useState(0)
   const [paginationEnd, setPaginationEnd] = useState(ROW_COUNT)
+  const [direction, setDirection] = useState<"up" | "down">("down")
   const [lastInput, setLastInput] = useState<"keyboard" | "mouse">()
   useEffect(() => {
     function handleKey() {
@@ -94,24 +115,6 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
       window.removeEventListener("pointermove", handlePointerMove)
     }
   }, [])
-
-  function computeOpacity(
-    transactions: Transaction[],
-    index: number,
-    paginationStart: number,
-    paginationEnd: number
-  ) {
-    if (index === ROW_COUNT - 1 && paginationEnd + 1 <= transactions.length)
-      return 0.4
-    if (index === ROW_COUNT - 2 && paginationEnd + 2 <= transactions.length)
-      return 0.6
-    if (index === ROW_COUNT - 3 && paginationEnd + 3 <= transactions.length)
-      return 0.8
-    if (index === 0 && paginationStart - index > 0) return 0.4
-    if (index === 1 && paginationStart - index > 0) return 0.6
-    if (index === 2 && paginationStart - index > 0) return 0.8
-    else return 1
-  }
 
   return (
     <RovingFocusGroup orientation="vertical">
@@ -155,16 +158,18 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
                 ) {
                   setPaginationStart(paginationStart + 1)
                   setPaginationEnd(paginationEnd + 1)
+                  setDirection("down")
                 }
 
                 // Go up when towards the top of the list
                 if (index <= PAGINATE_UP_THRESHOLD && paginationStart !== 0) {
                   setPaginationStart(paginationStart - 1)
                   setPaginationEnd(paginationEnd - 1)
+                  setDirection("up")
                 }
               }}
             >
-              <li
+              <motion.li
                 className={styles.item}
                 onKeyDown={(e) => handleKeyDown(e, transaction)}
                 onClick={(e) => handleClick(e, transaction)}
@@ -179,14 +184,13 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
                   if (li) liRefs.current[transaction.id] = li
                   else delete liRefs.current[transaction.id]
                 }}
-                style={{
-                  opacity: computeOpacity(
-                    transactions,
-                    index,
-                    paginationStart,
-                    paginationEnd
-                  )
-                }}
+                layout
+                custom={direction}
+                variants={variants}
+                initial={hasMounted ? "enter" : false}
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.15 }}
               >
                 <span className={styles.date}>
                   {Intl.DateTimeFormat("en-US", {
@@ -206,7 +210,7 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
                     currency: transaction.currencyCode
                   }).format(transaction.amount)}
                 </span>
-              </li>
+              </motion.li>
             </RovingFocusGroupItem>
           ))}
       </ol>
