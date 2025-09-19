@@ -77,6 +77,8 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
     updateHighlight(activeId)
   }, [activeId, updateHighlight])
 
+  const [hasMounted, setHasMounted] = useState(false)
+  useEffect(() => setHasMounted(true), [])
   const variants: Variants = {
     enter: (direction: "up" | "down") => ({
       opacity: 0,
@@ -185,7 +187,7 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
                 layout
                 custom={direction}
                 variants={variants}
-                initial="enter"
+                initial={hasMounted ? "enter" : false}
                 animate="center"
                 exit="exit"
                 transition={{ duration: 0.15 }}
