@@ -1,13 +1,15 @@
 body.page {
   max-width: 700px;
-  margin: 100px auto;
+  height: 100vh;
+  margin: 0 auto;
 }
 
 header.header {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-top: 100px;
+  margin-bottom: 38px;
 }
 
 h1.title {

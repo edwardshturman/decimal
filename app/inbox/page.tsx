@@ -7,9 +7,6 @@ import { getAccountsAndTransactions } from "@/functions/db/transactions"
 import { Inbox } from "@/components/Inbox"
 import { PlaidLink } from "@/components/PlaidLink"
 
-// Styles
-import styles from "@/app/Page.module.css"
-
 export default async function Plaid() {
   const user = await getOrCreateCurrentUser()
   const { accounts, transactions } = await getAccountsAndTransactions(user.id)
@@ -22,10 +19,9 @@ export default async function Plaid() {
     )
   }
 
-  // TODO: After the user connects their accounts, add a new option for "add a new account"
   return (
     <>
-      <main className={styles.page}>
+      <main>
         <PlaidLinkWrapper />
         <Inbox transactions={transactions} />
       </main>
