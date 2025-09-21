@@ -5,7 +5,7 @@ import {
   RovingFocusGroup,
   RovingFocusGroupItem
 } from "@radix-ui/react-roving-focus"
-import { motion } from "motion/react"
+import { AnimatePresence, motion } from "motion/react"
 
 // Hooks
 import {
@@ -40,6 +40,12 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
     event: KeyboardEvent<HTMLLIElement>,
     transaction: Transaction
   ) {
+    if (event.key === "ArrowDown") {
+      setDirection("down")
+    }
+    if (event.key === "ArrowUp") {
+      setDirection("up")
+    }
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault()
       handleSelect(transaction)
@@ -137,85 +143,87 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
         ref={olRef}
       >
         <div className={styles.highlight} style={highlightStyles} />
-        {transactions
-          .sort((a, b) => b.date.getTime() - a.date.getTime())
-          .slice(paginationStart, paginationEnd)
-          .map((transaction, index) => (
-            <RovingFocusGroupItem
-              key={transaction.id}
-              asChild
-              focusable
-              autoFocus={index === 0}
-              onFocus={() => {
-                setActiveId(transaction.id)
-
-                if (lastInput !== "keyboard") return
-
-                // Go down when towards the bottom of the list
-                if (
-                  index >= PAGINATE_DOWN_THRESHOLD &&
-                  paginationEnd !== transactions.length
-                ) {
-                  setPaginationStart(paginationStart + 1)
-                  setPaginationEnd(paginationEnd + 1)
-                  setDirection("down")
-                }
-
-                // Go up when towards the top of the list
-                if (index <= PAGINATE_UP_THRESHOLD && paginationStart !== 0) {
-                  setPaginationStart(paginationStart - 1)
-                  setPaginationEnd(paginationEnd - 1)
-                  setDirection("up")
-                }
-              }}
-            >
-              <motion.li
-                className={styles.item}
-                onKeyDown={(e) => handleKeyDown(e, transaction)}
-                onClick={(e) => handleClick(e, transaction)}
-                onMouseEnter={() => {
-                  if (lastInput !== "mouse") return
+        <AnimatePresence mode="popLayout">
+          {transactions
+            .sort((a, b) => b.date.getTime() - a.date.getTime())
+            .slice(paginationStart, paginationEnd)
+            .map((transaction, index) => (
+              <RovingFocusGroupItem
+                key={transaction.id}
+                asChild
+                focusable
+                autoFocus={index === 0}
+                onFocus={() => {
                   setActiveId(transaction.id)
-                  liRefs.current[transaction.id]?.focus({ preventScroll: true })
-                }}
-                role="option"
-                aria-selected={activeId === transaction.id}
-                ref={(li) => {
-                  if (li) liRefs.current[transaction.id] = li
-                  else delete liRefs.current[transaction.id]
-                }}
-                layout
-                custom={direction}
-                variants={variants}
-                initial={hasMounted ? "enter" : false}
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.15 }}
-                style={{
-                  minHeight: ROW_HEIGHT
+
+                  if (lastInput !== "keyboard") return
+
+                  // Go down when towards the bottom of the list
+                  if (
+                    index >= PAGINATE_DOWN_THRESHOLD &&
+                    paginationEnd !== transactions.length
+                  ) {
+                    setPaginationStart(paginationStart + 1)
+                    setPaginationEnd(paginationEnd + 1)
+                  }
+
+                  // Go up when towards the top of the list
+                  if (index <= PAGINATE_UP_THRESHOLD && paginationStart !== 0) {
+                    setPaginationStart(paginationStart - 1)
+                    setPaginationEnd(paginationEnd - 1)
+                  }
                 }}
               >
-                <span className={styles.date}>
-                  {Intl.DateTimeFormat("en-US", {
-                    month: "2-digit",
-                    day: "2-digit",
-                    year:
-                      transaction.date.getFullYear() !==
-                      new Date().getFullYear()
-                        ? "numeric"
-                        : undefined
-                  }).format(transaction.date)}
-                </span>
-                <span className={styles.name}>{transaction.name}</span>
-                <span className={styles.amount}>
-                  {Intl.NumberFormat("en-US", {
-                    style: "currency",
-                    currency: transaction.currencyCode
-                  }).format(transaction.amount)}
-                </span>
-              </motion.li>
-            </RovingFocusGroupItem>
-          ))}
+                <motion.li
+                  className={styles.item}
+                  onKeyDown={(e) => handleKeyDown(e, transaction)}
+                  onClick={(e) => handleClick(e, transaction)}
+                  onMouseEnter={() => {
+                    if (lastInput !== "mouse") return
+                    setActiveId(transaction.id)
+                    liRefs.current[transaction.id]?.focus({
+                      preventScroll: true
+                    })
+                  }}
+                  role="option"
+                  aria-selected={activeId === transaction.id}
+                  ref={(li) => {
+                    if (li) liRefs.current[transaction.id] = li
+                    else delete liRefs.current[transaction.id]
+                  }}
+                  layout
+                  custom={direction}
+                  variants={variants}
+                  initial={hasMounted ? "enter" : false}
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.15 }}
+                  style={{
+                    minHeight: ROW_HEIGHT
+                  }}
+                >
+                  <span className={styles.date}>
+                    {Intl.DateTimeFormat("en-US", {
+                      month: "2-digit",
+                      day: "2-digit",
+                      year:
+                        transaction.date.getFullYear() !==
+                        new Date().getFullYear()
+                          ? "numeric"
+                          : undefined
+                    }).format(transaction.date)}
+                  </span>
+                  <span className={styles.name}>{transaction.name}</span>
+                  <span className={styles.amount}>
+                    {Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: transaction.currencyCode
+                    }).format(transaction.amount)}
+                  </span>
+                </motion.li>
+              </RovingFocusGroupItem>
+            ))}
+        </AnimatePresence>
       </ol>
       <div
         className={styles.chevron}
