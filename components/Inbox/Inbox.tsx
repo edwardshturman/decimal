@@ -191,6 +191,9 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
                 animate="center"
                 exit="exit"
                 transition={{ duration: 0.15 }}
+                style={{
+                  minHeight: ROW_HEIGHT
+                }}
               >
                 <span className={styles.date}>
                   {Intl.DateTimeFormat("en-US", {

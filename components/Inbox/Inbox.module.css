@@ -8,7 +8,6 @@ ol.list {
 
 li.item {
   position: relative;
-  z-index: 1;
   padding: 8px 16px;
   cursor: pointer;
   user-select: none;
@@ -16,7 +15,6 @@ li.item {
   flex-direction: row;
   align-items: baseline;
   gap: 24px;
-  min-height: 38px;
 
   span.date {
     color: var(--color-accent-text);
@@ -42,7 +40,7 @@ div.highlight {
   position: absolute;
   left: 0;
   right: 0;
-  z-index: 0;
+  z-index: -1;
   border-radius: 6px;
   background-color: var(--color-dark-blue-10);
   transition:
