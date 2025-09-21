@@ -57,6 +57,7 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
   }
 
   const ROW_HEIGHT = 38
+  const CHEVRON_DIMENSIONS = 24
   const [activeId, setActiveId] = useState(transactions[0].id)
   const olRef = useRef<HTMLOListElement>(null)
   const liRefs = useRef<Record<string, HTMLElement>>({})
@@ -123,10 +124,31 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
   }, [])
 
   return (
-    <RovingFocusGroup orientation="vertical">
+    <RovingFocusGroup orientation="vertical" style={{ position: "relative" }}>
       <div
-        className={styles.chevron}
-        style={{ opacity: paginationStart > 0 ? 0.4 : 0 }}
+        className={styles.progressiveBlurContainer}
+        style={{
+          opacity: paginationStart > 0 ? 1 : 0,
+          height: ROW_HEIGHT * 4,
+          top: 0,
+          marginTop: -ROW_HEIGHT
+        }}
+      >
+        <div
+          className={styles.blurFilter}
+          style={{
+            background: "linear-gradient(var(--color-background), transparent)",
+            mask: "linear-gradient(var(--color-background) 0%, transparent 100%)"
+          }}
+        />
+      </div>
+      <div
+        className={`${styles.chevron} ${styles.top}`}
+        style={{
+          opacity: paginationStart > 0 ? 0.4 : 0,
+          width: CHEVRON_DIMENSIONS,
+          height: CHEVRON_DIMENSIONS
+        }}
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
           <path
@@ -226,8 +248,29 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
         </AnimatePresence>
       </ol>
       <div
-        className={styles.chevron}
-        style={{ opacity: paginationEnd < transactions.length ? 0.4 : 0 }}
+        className={styles.progressiveBlurContainer}
+        style={{
+          opacity: paginationEnd < transactions.length ? 1 : 0,
+          height: ROW_HEIGHT * 4,
+          bottom: 0,
+          marginBottom: -ROW_HEIGHT
+        }}
+      >
+        <div
+          className={styles.blurFilter}
+          style={{
+            background: "linear-gradient(transparent, var(--color-background))",
+            mask: "linear-gradient(transparent 0%, var(--color-background) 100%)"
+          }}
+        />
+      </div>
+      <div
+        className={`${styles.chevron} ${styles.bottom}`}
+        style={{
+          width: CHEVRON_DIMENSIONS,
+          height: CHEVRON_DIMENSIONS,
+          opacity: paginationEnd < transactions.length ? 0.4 : 0
+        }}
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
           <path
