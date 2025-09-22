@@ -5,7 +5,7 @@ import {
   RovingFocusGroup,
   RovingFocusGroupItem
 } from "@radix-ui/react-roving-focus"
-import { AnimatePresence, motion } from "motion/react"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
 // Hooks
 import {
@@ -86,6 +86,8 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
 
   const [hasMounted, setHasMounted] = useState(false)
   useEffect(() => setHasMounted(true), [])
+  const isServer = typeof window === "undefined"
+  const shouldReduceMotion = useReducedMotion()
   const variants: Variants = {
     enter: (direction: "up" | "down") => ({
       opacity: 0,
@@ -216,10 +218,20 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
                   layout
                   custom={direction}
                   variants={variants}
-                  initial={hasMounted ? "enter" : false}
-                  animate="center"
-                  exit="exit"
-                  transition={{ duration: 0.15 }}
+                  initial={
+                    isServer
+                      ? undefined
+                      : hasMounted
+                        ? shouldReduceMotion
+                          ? false
+                          : "enter"
+                        : undefined
+                  }
+                  animate={!shouldReduceMotion ? "center" : {}}
+                  exit={!shouldReduceMotion ? "exit" : {}}
+                  transition={
+                    !shouldReduceMotion ? { duration: 0.15 } : { duration: 0 }
+                  }
                   style={{
                     minHeight: ROW_HEIGHT
                   }}

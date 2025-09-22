@@ -49,6 +49,12 @@ div.highlight {
   will-change: transform, height;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  div.highlight {
+    transition: none;
+  }
+}
+
 div.progressiveBlurContainer {
   position: absolute;
   left: 0;
