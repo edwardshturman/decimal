@@ -5,6 +5,7 @@ import {
   RovingFocusGroup,
   RovingFocusGroupItem
 } from "@radix-ui/react-roving-focus"
+import { AnimatePresence, motion } from "motion/react"
 
 // Hooks
 import {
@@ -16,6 +17,7 @@ import {
 } from "react"
 
 // Types
+import type { Variants } from "motion/react"
 import type { CSSProperties, KeyboardEvent, MouseEvent } from "react"
 
 import styles from "./Inbox.module.css"
@@ -38,6 +40,12 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
     event: KeyboardEvent<HTMLLIElement>,
     transaction: Transaction
   ) {
+    if (event.key === "ArrowDown") {
+      setDirection("down")
+    }
+    if (event.key === "ArrowUp") {
+      setDirection("up")
+    }
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault()
       handleSelect(transaction)
@@ -48,12 +56,14 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
     }
   }
 
+  const ROW_HEIGHT = 38
+  const CHEVRON_DIMENSIONS = 24
   const [activeId, setActiveId] = useState(transactions[0].id)
   const olRef = useRef<HTMLOListElement>(null)
   const liRefs = useRef<Record<string, HTMLElement>>({})
   const [highlightStyles, setHighlightStyles] = useState<CSSProperties>({
     transform: "translateY(0px)",
-    height: "38px" // rough estimation of single-line item height
+    height: `${ROW_HEIGHT}px`
   })
 
   const updateHighlight = useCallback((id: string) => {
@@ -74,11 +84,29 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
     updateHighlight(activeId)
   }, [activeId, updateHighlight])
 
+  const [hasMounted, setHasMounted] = useState(false)
+  useEffect(() => setHasMounted(true), [])
+  const variants: Variants = {
+    enter: (direction: "up" | "down") => ({
+      opacity: 0,
+      y: direction === "down" ? ROW_HEIGHT : -ROW_HEIGHT
+    }),
+    center: {
+      opacity: 1,
+      y: 0
+    },
+    exit: (direction: "up" | "down") => ({
+      opacity: 0,
+      y: direction === "down" ? -ROW_HEIGHT : ROW_HEIGHT
+    })
+  }
+
   const ROW_COUNT = 11
   const PAGINATE_UP_THRESHOLD = 2
   const PAGINATE_DOWN_THRESHOLD = 8
   const [paginationStart, setPaginationStart] = useState(0)
   const [paginationEnd, setPaginationEnd] = useState(ROW_COUNT)
+  const [direction, setDirection] = useState<"up" | "down">("down")
   const [lastInput, setLastInput] = useState<"keyboard" | "mouse">()
   useEffect(() => {
     function handleKey() {
@@ -95,29 +123,32 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
     }
   }, [])
 
-  function computeOpacity(
-    transactions: Transaction[],
-    index: number,
-    paginationStart: number,
-    paginationEnd: number
-  ) {
-    if (index === ROW_COUNT - 1 && paginationEnd + 1 <= transactions.length)
-      return 0.4
-    if (index === ROW_COUNT - 2 && paginationEnd + 2 <= transactions.length)
-      return 0.6
-    if (index === ROW_COUNT - 3 && paginationEnd + 3 <= transactions.length)
-      return 0.8
-    if (index === 0 && paginationStart - index > 0) return 0.4
-    if (index === 1 && paginationStart - index > 0) return 0.6
-    if (index === 2 && paginationStart - index > 0) return 0.8
-    else return 1
-  }
-
   return (
-    <RovingFocusGroup orientation="vertical">
+    <RovingFocusGroup orientation="vertical" style={{ position: "relative" }}>
       <div
-        className={styles.chevron}
-        style={{ opacity: paginationStart > 0 ? 0.4 : 0 }}
+        className={styles.progressiveBlurContainer}
+        style={{
+          opacity: paginationStart > 0 ? 1 : 0,
+          height: ROW_HEIGHT * 4,
+          top: 0,
+          marginTop: -ROW_HEIGHT
+        }}
+      >
+        <div
+          className={styles.blurFilter}
+          style={{
+            background: "linear-gradient(var(--color-background), transparent)",
+            mask: "linear-gradient(var(--color-background) 0%, transparent 100%)"
+          }}
+        />
+      </div>
+      <div
+        className={`${styles.chevron} ${styles.top}`}
+        style={{
+          opacity: paginationStart > 0 ? 0.4 : 0,
+          width: CHEVRON_DIMENSIONS,
+          height: CHEVRON_DIMENSIONS
+        }}
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
           <path
@@ -134,85 +165,112 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
         ref={olRef}
       >
         <div className={styles.highlight} style={highlightStyles} />
-        {transactions
-          .sort((a, b) => b.date.getTime() - a.date.getTime())
-          .slice(paginationStart, paginationEnd)
-          .map((transaction, index) => (
-            <RovingFocusGroupItem
-              key={transaction.id}
-              asChild
-              focusable
-              autoFocus={index === 0}
-              onFocus={() => {
-                setActiveId(transaction.id)
-
-                if (lastInput !== "keyboard") return
-
-                // Go down when towards the bottom of the list
-                if (
-                  index >= PAGINATE_DOWN_THRESHOLD &&
-                  paginationEnd !== transactions.length
-                ) {
-                  setPaginationStart(paginationStart + 1)
-                  setPaginationEnd(paginationEnd + 1)
-                }
-
-                // Go up when towards the top of the list
-                if (index <= PAGINATE_UP_THRESHOLD && paginationStart !== 0) {
-                  setPaginationStart(paginationStart - 1)
-                  setPaginationEnd(paginationEnd - 1)
-                }
-              }}
-            >
-              <li
-                className={styles.item}
-                onKeyDown={(e) => handleKeyDown(e, transaction)}
-                onClick={(e) => handleClick(e, transaction)}
-                onMouseEnter={() => {
-                  if (lastInput !== "mouse") return
+        <AnimatePresence mode="popLayout">
+          {transactions
+            .sort((a, b) => b.date.getTime() - a.date.getTime())
+            .slice(paginationStart, paginationEnd)
+            .map((transaction, index) => (
+              <RovingFocusGroupItem
+                key={transaction.id}
+                asChild
+                focusable
+                autoFocus={index === 0}
+                onFocus={() => {
                   setActiveId(transaction.id)
-                  liRefs.current[transaction.id]?.focus({ preventScroll: true })
-                }}
-                role="option"
-                aria-selected={activeId === transaction.id}
-                ref={(li) => {
-                  if (li) liRefs.current[transaction.id] = li
-                  else delete liRefs.current[transaction.id]
-                }}
-                style={{
-                  opacity: computeOpacity(
-                    transactions,
-                    index,
-                    paginationStart,
-                    paginationEnd
-                  )
+
+                  if (lastInput !== "keyboard") return
+
+                  // Go down when towards the bottom of the list
+                  if (
+                    index >= PAGINATE_DOWN_THRESHOLD &&
+                    paginationEnd !== transactions.length
+                  ) {
+                    setPaginationStart(paginationStart + 1)
+                    setPaginationEnd(paginationEnd + 1)
+                  }
+
+                  // Go up when towards the top of the list
+                  if (index <= PAGINATE_UP_THRESHOLD && paginationStart !== 0) {
+                    setPaginationStart(paginationStart - 1)
+                    setPaginationEnd(paginationEnd - 1)
+                  }
                 }}
               >
-                <span className={styles.date}>
-                  {Intl.DateTimeFormat("en-US", {
-                    month: "2-digit",
-                    day: "2-digit",
-                    year:
-                      transaction.date.getFullYear() !==
-                      new Date().getFullYear()
-                        ? "numeric"
-                        : undefined
-                  }).format(transaction.date)}
-                </span>
-                <span className={styles.name}>{transaction.name}</span>
-                <span className={styles.amount}>
-                  {Intl.NumberFormat("en-US", {
-                    style: "currency",
-                    currency: transaction.currencyCode
-                  }).format(transaction.amount)}
-                </span>
-              </li>
-            </RovingFocusGroupItem>
-          ))}
+                <motion.li
+                  className={styles.item}
+                  onKeyDown={(e) => handleKeyDown(e, transaction)}
+                  onClick={(e) => handleClick(e, transaction)}
+                  onMouseEnter={() => {
+                    if (lastInput !== "mouse") return
+                    setActiveId(transaction.id)
+                    liRefs.current[transaction.id]?.focus({
+                      preventScroll: true
+                    })
+                  }}
+                  role="option"
+                  aria-selected={activeId === transaction.id}
+                  ref={(li) => {
+                    if (li) liRefs.current[transaction.id] = li
+                    else delete liRefs.current[transaction.id]
+                  }}
+                  layout
+                  custom={direction}
+                  variants={variants}
+                  initial={hasMounted ? "enter" : false}
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.15 }}
+                  style={{
+                    minHeight: ROW_HEIGHT
+                  }}
+                >
+                  <span className={styles.date}>
+                    {Intl.DateTimeFormat("en-US", {
+                      month: "2-digit",
+                      day: "2-digit",
+                      year:
+                        transaction.date.getFullYear() !==
+                        new Date().getFullYear()
+                          ? "numeric"
+                          : undefined
+                    }).format(transaction.date)}
+                  </span>
+                  <span className={styles.name}>{transaction.name}</span>
+                  <span className={styles.amount}>
+                    {Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: transaction.currencyCode
+                    }).format(transaction.amount)}
+                  </span>
+                </motion.li>
+              </RovingFocusGroupItem>
+            ))}
+        </AnimatePresence>
       </ol>
       <div
-        className={styles.chevron}
-        style={{ opacity: paginationEnd < transactions.length ? 0.4 : 0 }}
+        className={styles.progressiveBlurContainer}
+        style={{
+          opacity: paginationEnd < transactions.length ? 1 : 0,
+          height: ROW_HEIGHT * 4,
+          bottom: 0,
+          marginBottom: -ROW_HEIGHT
+        }}
+      >
+        <div
+          className={styles.blurFilter}
+          style={{
+            background: "linear-gradient(transparent, var(--color-background))",
+            mask: "linear-gradient(transparent 0%, var(--color-background) 100%)"
+          }}
+        />
+      </div>
+      <div
+        className={`${styles.chevron} ${styles.bottom}`}
+        style={{
+          width: CHEVRON_DIMENSIONS,
+          height: CHEVRON_DIMENSIONS,
+          opacity: paginationEnd < transactions.length ? 0.4 : 0
+        }}
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
           <path

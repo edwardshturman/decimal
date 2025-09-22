@@ -8,7 +8,6 @@ ol.list {
 
 li.item {
   position: relative;
-  z-index: 1;
   padding: 8px 16px;
   cursor: pointer;
   user-select: none;
@@ -19,6 +18,12 @@ li.item {
 
   span.date {
     color: var(--color-accent-text);
+  }
+
+  span.name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   span.amount {
@@ -35,7 +40,7 @@ div.highlight {
   position: absolute;
   left: 0;
   right: 0;
-  z-index: 0;
+  z-index: -1;
   border-radius: 6px;
   background-color: var(--color-dark-blue-10);
   transition:
@@ -44,10 +49,36 @@ div.highlight {
   will-change: transform, height;
 }
 
+div.progressiveBlurContainer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 1;
+
+  div.blurFilter {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    backdrop-filter: blur(32px);
+  }
+}
+
 div.chevron {
-  width: 24px;
-  height: 24px;
-  margin: auto;
+  position: absolute;
+  left: 50%;
+  &.top {
+    top: 0;
+    transform: translateY(-24px);
+  }
+  &.bottom {
+    bottom: 0;
+    transform: translateY(24px);
+  }
+  z-index: 2;
+  pointer-events: none;
   transition: opacity 200ms ease-in;
 
   svg {
