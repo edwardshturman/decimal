@@ -1,11 +1,4 @@
 :root {
-  --color-cream: hsla(42deg, 50%, 88%, 1);
-  --color-chai: hsla(42deg, 20%, 78%, 1);
-  --color-olive: hsla(42deg, 20%, 58%, 1);
-  --color-olive-20: hsla(42deg, 20%, 58%, 0.2);
-  --color-olive-10: hsla(42deg, 20%, 58%, 0.1);
-  --color-coal: hsl(42deg, 20%, 8%, 1);
-
   --color-dark-blue: hsla(227deg, 50%, 22%, 1);
   --color-dark-blue-10: hsla(227deg, 50%, 66%, 0.1);
   --color-dark-blue-70: hsla(227deg, 50%, 22%, 0.7);
