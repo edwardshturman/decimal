@@ -1,6 +1,12 @@
 "use client"
 
+// Components
+import { Button } from "@/components/Button"
+
+// Plaid
 import { type PlaidLinkOptions, usePlaidLink } from "react-plaid-link"
+
+// Server Actions
 import { exchangePublicTokenForAccessTokenServerAction } from "@/functions/actions"
 
 export function PlaidLink({
@@ -22,8 +28,8 @@ export function PlaidLink({
   const { open, ready } = usePlaidLink(config)
 
   return (
-    <button onClick={() => open()} disabled={!ready}>
+    <Button onClick={() => open()} disabled={!ready}>
       Connect a bank account
-    </button>
+    </Button>
   )
 }

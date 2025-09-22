@@ -15,7 +15,6 @@ import {
 } from "@/functions/db/transactions"
 import { APP_NAME } from "@/lib/constants"
 import { Transaction } from "@/generated/prisma"
-import { Decimal } from "@prisma/client/runtime/library"
 import { createCursor, getCursor, updateCursor } from "@/functions/db/cursors"
 
 if (!process.env.PLAID_CLIENT_ID) {
