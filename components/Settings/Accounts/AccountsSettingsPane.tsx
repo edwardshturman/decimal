@@ -39,18 +39,8 @@ async function AccountsList({ userId }: { userId: string }) {
       {userAccounts.map((account) => {
         return (
           <li key={account.id}>
-            <span>{account.name}</span>
-            <span>
-              Connected on{" "}
-              {Intl.DateTimeFormat("en-US", {
-                month: "2-digit",
-                day: "2-digit",
-                year:
-                  account.createdAt.getFullYear() !== new Date().getFullYear()
-                    ? "numeric"
-                    : undefined
-              }).format(account.createdAt)}
-            </span>
+            <span>{account.id.slice(1, 6)}</span>
+            <span className={styles.name}>{account.name}</span>
             <span className={styles.remove}>
               <form action={deleteAccountServerAction}>
                 <input hidden readOnly name="userId" value={userId ?? ""} />
