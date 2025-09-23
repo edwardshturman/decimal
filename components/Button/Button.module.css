@@ -10,7 +10,6 @@ button.button {
   background-color: var(--color-dark-blue-10);
   color: var(--color-foreground);
   transition:
-    box-shadow 0.3s ease,
     background-color 0.3s ease,
     scale 150ms ease;
 
