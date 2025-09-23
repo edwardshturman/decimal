@@ -11,8 +11,19 @@ ul.list {
       border-top: 1px solid var(--color-dark-blue-20);
     }
 
-    span.connectedOn {
+    span.remove input {
+      border: unset;
+      background-color: unset;
       color: var(--color-accent-text);
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: color 300ms ease;
+      &:hover {
+        color: var(--color-link);
+      }
     }
   }
 }
