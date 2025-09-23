@@ -59,8 +59,6 @@ export async function deleteAccount(accountId: string) {
     console.log(
       "Account was the only one associated with the Item, deleting Item"
     )
-    await deleteItem(associatedItem.id)
-    console.log("Deleted Item from database")
     const encryptedAccessToken = associatedItem.accessToken
     const encryptionKey = process.env.KEY_IN_USE!
     const { plainText: accessToken } = decryptAccessToken(
@@ -71,5 +69,7 @@ export async function deleteAccount(accountId: string) {
     console.log("Removing Item from Plaid...")
     await removeItem(accessToken)
     console.log("Removed Item from Plaid")
+    await deleteItem(associatedItem.id)
+    console.log("Deleted Item from database")
   }
 }
