@@ -1,20 +1,16 @@
 :root {
-  --color-cream: hsla(42deg, 50%, 88%, 1);
-  --color-chai: hsla(42deg, 20%, 78%, 1);
-  --color-olive: hsla(42deg, 20%, 58%, 1);
-  --color-olive-20: hsla(42deg, 20%, 58%, 0.2);
-  --color-olive-10: hsla(42deg, 20%, 58%, 0.1);
-  --color-coal: hsl(42deg, 20%, 8%, 1);
-
   --color-dark-blue: hsla(227deg, 50%, 22%, 1);
   --color-dark-blue-10: hsla(227deg, 50%, 66%, 0.1);
+  --color-dark-blue-20: hsla(227deg, 50%, 22%, 0.2);
   --color-dark-blue-70: hsla(227deg, 50%, 22%, 0.7);
   --color-darker-blue: hsla(227deg, 50%, 10%, 1);
+  --color-light-blue: hsla(227deg, 50%, 66%, 1);
   --color-blueish-white: hsla(227deg, 50%, 98%, 1);
 
   --color-background: var(--color-blueish-white);
   --color-foreground: var(--color-darker-blue);
   --color-accent-text: var(--color-dark-blue-70);
+  --color-link: var(--color-light-blue);
 
   --font-sans: var(--font-inter), ui-sans-serif, sans-serif;
   --font-mono: var(--font-roboto-mono), ui-monospace, monospace;
@@ -40,7 +36,24 @@ body {
   margin: 0;
 }
 
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+}
+
+p {
+  font-size: 1rem;
+  line-height: 180%;
+}
+
 a {
-  color: inherit;
+  font-weight: 600;
   text-decoration: none;
+  color: var(--color-accent-text);
+  transition: color 300ms ease;
+
+  &:hover {
+    color: var(--color-link);
+  }
 }
