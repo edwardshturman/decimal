@@ -1,11 +1,17 @@
 "use server"
 
+// Functions
 import {
   exchangePublicTokenForAccessToken,
   getAccounts
 } from "@/functions/plaid"
-import { createItem } from "@/functions/db/items"
-import { createAccount } from "@/functions/db/accounts"
+import {
+  createAccount,
+  deleteAccount,
+  getAccount
+} from "@/functions/db/accounts"
+import { revalidatePath } from "next/cache"
+import { createItem, getItem } from "@/functions/db/items"
 import { encryptAccessToken } from "@/functions/crypto/utils"
 
 export async function exchangePublicTokenForAccessTokenServerAction(
@@ -40,4 +46,24 @@ export async function exchangePublicTokenForAccessTokenServerAction(
       mask: account.mask || undefined
     })
   }
+}
+
+export async function deleteAccountServerAction(formData: FormData) {
+  const rawFormData = {
+    userId: formData.get("userId")?.toString(),
+    accountId: formData.get("accountId")?.toString()
+  }
+  const { userId, accountId } = rawFormData
+  if (!userId || !accountId) return
+
+  const account = await getAccount(accountId)
+  if (!account) return
+
+  const associatedItem = await getItem(account.itemId)
+  if (!associatedItem) return
+
+  if (associatedItem.userId !== userId) return
+
+  await deleteAccount(accountId)
+  revalidatePath("/settings")
 }

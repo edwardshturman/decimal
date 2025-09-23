@@ -72,6 +72,11 @@ export async function getItem(accessToken: string) {
   return response.data.item
 }
 
+export async function removeItem(accessToken: string) {
+  const response = await client.itemRemove({ access_token: accessToken })
+  return response.data.request_id
+}
+
 export async function getAccounts(accessToken: string) {
   const accountsResponse = await client.accountsGet({
     access_token: accessToken

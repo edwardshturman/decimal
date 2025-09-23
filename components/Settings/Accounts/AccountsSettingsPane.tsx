@@ -1,8 +1,9 @@
 // Functions
-import { getItems } from "@/functions/db/items"
+import { getUserItems } from "@/functions/db/items"
 import { createLinkToken } from "@/functions/plaid"
 import { getOrCreateCurrentUser } from "@/lib/auth"
 import { getAccountsByItemId } from "@/functions/db/accounts"
+import { deleteAccountServerAction } from "@/functions/actions"
 
 // Components
 import { Suspense } from "react"
@@ -26,7 +27,7 @@ function AccountsListSkeleton() {
 }
 
 async function AccountsList({ userId }: { userId: string }) {
-  const userItems = await getItems(userId)
+  const userItems = await getUserItems(userId)
   const userAccounts: Account[] = []
   for (const item of userItems) {
     const itemAccounts = await getAccountsByItemId(item.id)
@@ -38,17 +39,19 @@ async function AccountsList({ userId }: { userId: string }) {
       {userAccounts.map((account) => {
         return (
           <li key={account.id}>
-            <span>{account.name}</span>
-            <span className={styles.connectedOn}>
-              Connected on{" "}
-              {Intl.DateTimeFormat("en-US", {
-                month: "2-digit",
-                day: "2-digit",
-                year:
-                  account.createdAt.getFullYear() !== new Date().getFullYear()
-                    ? "numeric"
-                    : undefined
-              }).format(account.createdAt)}
+            <span>{account.id.slice(1, 6)}</span>
+            <span className={styles.name}>{account.name}</span>
+            <span className={styles.remove}>
+              <form action={deleteAccountServerAction}>
+                <input hidden readOnly name="userId" value={userId ?? ""} />
+                <input
+                  hidden
+                  readOnly
+                  name="accountId"
+                  value={account.id ?? ""}
+                />
+                <input type="submit" value="Remove" />
+              </form>
             </span>
           </li>
         )

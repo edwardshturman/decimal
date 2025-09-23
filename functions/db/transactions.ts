@@ -1,5 +1,5 @@
 import prisma from "@/functions/db"
-import { getItems } from "@/functions/db/items"
+import { getUserItems } from "@/functions/db/items"
 import { getAccountsByItemId } from "@/functions/db/accounts"
 import { decryptAccessToken } from "@/functions/crypto/utils"
 import type { Account, Transaction } from "@/generated/prisma"
@@ -54,7 +54,7 @@ export async function createTransaction(transaction: Transaction) {
 export async function getAccountsAndTransactions(userId: string) {
   const accounts: Account[] = []
   const transactions: Transaction[] = []
-  const userItems = await getItems(userId)
+  const userItems = await getUserItems(userId)
   const encryptionKey = process.env.KEY_IN_USE!
   const keyVersion = process.env.KEY_VERSION!
   for (const item of userItems) {
