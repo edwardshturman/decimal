@@ -4,39 +4,3 @@ h2.heading {
   margin-bottom: 24px;
   padding-left: 16px;
 }
-
-div.paneContainer {
-  border: 1px solid var(--color-dark-blue-20);
-  border-radius: 6px;
-  box-shadow: 0 2px 0 0 var(--color-dark-blue-20);
-  padding: 24px 16px;
-
-  h3 {
-    color: var(--color-dark-blue);
-    font-size: 1rem;
-    font-weight: 700;
-  }
-
-  p {
-    color: var(--color-accent-text);
-  }
-}
-
-ul.accountsList {
-  margin: 12px 0 20px 0;
-  font-family: var(--font-mono);
-  list-style: none;
-
-  li {
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--color-dark-blue-20);
-    &:first-of-type {
-      border-top: 1px solid var(--color-dark-blue-20);
-    }
-
-    span.connectedOn {
-      color: var(--color-accent-text);
-    }
-  }
-}
