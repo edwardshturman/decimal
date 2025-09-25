@@ -51,18 +51,16 @@ export async function deleteItem(itemId: string) {
     await prisma.transaction.deleteMany({
       where: { accountId: account.id }
     })
+    await prisma.cursor.deleteMany({
+      where: { accountId: account.id }
+    })
   }
-  console.log("Deleted associated Transactions across all Accounts")
+  console.log("Deleted associated Transactions and Cursors across all Accounts")
 
   await prisma.account.deleteMany({
     where: { itemId }
   })
   console.log("Deleted all associated Accounts")
-
-  await prisma.cursor.deleteMany({
-    where: { itemId }
-  })
-  console.log("Deleted all associated Cursors")
 
   console.log("Deleting Item... check calling function for success")
   return await prisma.item.delete({
