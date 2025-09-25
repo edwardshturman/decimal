@@ -1,20 +1,20 @@
 import prisma from "@/functions/db"
 
 type CursorInput = {
-  itemId: string
+  accountId: string
   string: string
 }
 
-export async function getCursor(itemId: string) {
+export async function getCursor(accountId: string) {
   return await prisma.cursor.findUnique({
-    where: { itemId }
+    where: { accountId }
   })
 }
 
 export async function createCursor(cursorInput: CursorInput) {
   return await prisma.cursor.create({
     data: {
-      itemId: cursorInput.itemId,
+      accountId: cursorInput.accountId,
       string: cursorInput.string
     }
   })
@@ -22,7 +22,7 @@ export async function createCursor(cursorInput: CursorInput) {
 
 export async function updateCursor(cursorInput: CursorInput) {
   return await prisma.cursor.update({
-    where: { itemId: cursorInput.itemId },
+    where: { accountId: cursorInput.accountId },
     data: { string: cursorInput.string }
   })
 }

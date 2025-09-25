@@ -24,7 +24,6 @@ model Item {
   encryptionKeyVersion String
   institutionName      String
   accounts             Account[] @relation("ItemAccounts")
-  cursor               Cursor?   @relation("ItemToCursor")
   userId               String
   user                 User      @relation("UserItems", fields: [userId], references: [id])
   createdAt            DateTime  @default(now())
@@ -37,6 +36,7 @@ model Account {
   mask         String?
   itemId       String
   item         Item          @relation("ItemAccounts", fields: [itemId], references: [id])
+  cursor       Cursor?       @relation("AccountToCursor")
   transactions Transaction[] @relation("AccountTransactions")
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @default(now())
@@ -56,8 +56,8 @@ model Transaction {
 }
 
 model Cursor {
-  itemId    String   @id
-  item      Item     @relation("ItemToCursor", fields: [itemId], references: [id])
+  accountId String   @id
+  account   Account  @relation("AccountToCursor", fields: [accountId], references: [id])
   string    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

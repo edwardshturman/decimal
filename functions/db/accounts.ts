@@ -50,6 +50,11 @@ export async function deleteAccount(accountId: string) {
   })
   console.log("Deleted transactions")
 
+  await prisma.cursor.deleteMany({
+    where: { accountId }
+  })
+  console.log("Deleted cursors")
+
   await prisma.account.delete({
     where: { id: accountId }
   })

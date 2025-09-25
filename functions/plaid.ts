@@ -103,65 +103,61 @@ function convertPlaidTransactionToDatabaseTransaction(
 }
 
 export async function syncTransactions(accessToken: string) {
-  // Get the Item's associated most recent cursor
-  const item = await getItem(accessToken)
-  const itemId = item?.item_id
-  if (!itemId) {
-    throw new Error("itemId is missing!")
-  }
+  const { accounts } = await getAccounts(accessToken)
+  for (const account of accounts) {
+    const cursorEntry = await getCursor(account.account_id)
+    let cursor = cursorEntry?.string
 
-  const cursorEntry = await getCursor(itemId)
-  let cursor = cursorEntry?.string
+    // Aggregate transactions since the last cursor
+    let added: Transaction[] = []
+    let modified: Transaction[] = []
+    let removed: RemovedTransaction[] = []
+    let hasMore = true
 
-  // Aggregate transactions since the last cursor
-  let added: Transaction[] = []
-  let modified: Transaction[] = []
-  let removed: RemovedTransaction[] = []
-  let hasMore = true
+    while (hasMore) {
+      const transactions = await client.transactionsSync({
+        access_token: accessToken,
+        cursor,
+        options: {
+          account_id: account.account_id,
+          include_original_description: true
+        }
+      })
+      const data = transactions.data
 
-  while (hasMore) {
-    const transactions = await client.transactionsSync({
-      access_token: accessToken,
-      cursor,
-      options: {
-        include_original_description: true
-      }
-      // TODO: add support for filtering by account_id
-    })
-    const data = transactions.data
+      added = added.concat(
+        data.added.map(convertPlaidTransactionToDatabaseTransaction)
+      )
+      modified = modified.concat(
+        data.modified.map(convertPlaidTransactionToDatabaseTransaction)
+      )
+      removed = removed.concat(data.removed)
+      hasMore = data.has_more
+      cursor = data.next_cursor
+    }
 
-    added = added.concat(
-      data.added.map(convertPlaidTransactionToDatabaseTransaction)
-    )
-    modified = modified.concat(
-      data.modified.map(convertPlaidTransactionToDatabaseTransaction)
-    )
-    removed = removed.concat(data.removed)
-    hasMore = data.has_more
-    cursor = data.next_cursor
-  }
+    // Update database entries
+    // TODO: Promise.all() or something to ensure atomicity
+    const removedIds = removed.map((transaction) => transaction.transaction_id)
+    for (const id of removedIds) {
+      await deleteTransaction(id)
+    }
+    for (const modifiedTransaction of modified) {
+      await updateTransaction(modifiedTransaction)
+    }
+    for (const addedTransaction of added) {
+      await createTransaction(addedTransaction)
+    }
 
-  // Update database entries
-  // TODO: Promise.all() or something to ensure atomicity
-  const removedIds = removed.map((transaction) => transaction.transaction_id)
-  for (const id of removedIds) {
-    await deleteTransaction(id)
-  }
-  for (const modifiedTransaction of modified) {
-    await updateTransaction(modifiedTransaction)
-  }
-  for (const addedTransaction of added) {
-    await createTransaction(addedTransaction)
-  }
-
-  // Save the most recent cursor
-  if (cursor === undefined) {
-    // `data.next_cursor` is always a string and the loop runs at least once
-    throw new Error("Cursor should not be undefined")
-  }
-  if (!cursorEntry) {
-    await createCursor({ itemId, string: cursor })
-  } else {
-    await updateCursor({ itemId, string: cursor })
+    // Save the most recent cursor
+    if (cursor === undefined) {
+      // `data.next_cursor` is always a string and the loop runs at least once
+      throw new Error("Cursor should not be undefined")
+    }
+    if (!cursorEntry) {
+      await createCursor({ accountId: account.account_id, string: cursor })
+    } else {
+      await updateCursor({ accountId: account.account_id, string: cursor })
+    }
   }
 }
