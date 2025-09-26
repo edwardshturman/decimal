@@ -1,6 +1,6 @@
 import prisma from "@/functions/db"
-import { removeItem } from "@/functions/plaid"
-import { deleteItem } from "@/functions/db/items"
+import { removeItemFromPlaid } from "@/functions/plaid"
+import { deleteItemFromDb } from "@/functions/db/items"
 import { decryptAccessToken } from "@/functions/crypto/utils"
 
 type CreateAccountInput = {
@@ -10,7 +10,7 @@ type CreateAccountInput = {
   itemId: string
 }
 
-export async function createAccount(accountInput: CreateAccountInput) {
+export async function createAccountInDb(accountInput: CreateAccountInput) {
   return await prisma.account.create({
     data: {
       id: accountInput.id,
@@ -21,19 +21,23 @@ export async function createAccount(accountInput: CreateAccountInput) {
   })
 }
 
-export async function getAccount(accountId: string) {
+export async function getAccountFromDb({ accountId }: { accountId: string }) {
   return await prisma.account.findUnique({
     where: { id: accountId }
   })
 }
 
-export async function getAccountsByItemId(itemId: string) {
+export async function getAccountsFromDb({ itemId }: { itemId: string }) {
   return await prisma.account.findMany({
     where: { itemId }
   })
 }
 
-export async function deleteAccount(accountId: string) {
+export async function deleteAccountFromDb({
+  accountId
+}: {
+  accountId: string
+}) {
   console.log("Deleting account " + accountId)
   const account = await prisma.account.findUnique({
     where: { id: accountId }
@@ -72,9 +76,9 @@ export async function deleteAccount(accountId: string) {
       associatedItem.encryptionKeyVersion
     )
     console.log("Removing Item from Plaid...")
-    await removeItem(accessToken)
+    await removeItemFromPlaid({ accessToken })
     console.log("Removed Item from Plaid")
-    await deleteItem(associatedItem.id)
+    await deleteItemFromDb({ itemId: associatedItem.id })
     console.log("Deleted Item from database")
   }
 }

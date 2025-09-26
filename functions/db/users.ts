@@ -5,7 +5,7 @@ type CreateUserInput = {
   email: string
 }
 
-export async function getUserByEmail(email: string) {
+export async function getUser({ email }: { email: string }) {
   return await prisma.user.findUnique({
     where: { email }
   })

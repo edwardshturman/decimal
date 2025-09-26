@@ -8,19 +8,19 @@ type CreateItemInput = {
   institutionName: string
 }
 
-export async function getItem(itemId: string) {
+export async function getItemFromDb({ itemId }: { itemId: string }) {
   return await prisma.item.findUnique({
     where: { id: itemId }
   })
 }
 
-export async function getUserItems(userId: string) {
+export async function getItemsFromDb({ userId }: { userId: string }) {
   return await prisma.item.findMany({
     where: { userId }
   })
 }
 
-export async function createItem(itemInput: CreateItemInput) {
+export async function createItemInDb(itemInput: CreateItemInput) {
   return await prisma.item.create({
     data: {
       id: itemInput.id,
@@ -39,7 +39,7 @@ export async function createItem(itemInput: CreateItemInput) {
  * @param itemId the ID of the Item to delete from the database
  * @returns the deleted Item
  */
-export async function deleteItem(itemId: string) {
+export async function deleteItemFromDb({ itemId }: { itemId: string }) {
   console.log("Deleting Item " + itemId)
   const item = await prisma.item.findUnique({
     where: { id: itemId },

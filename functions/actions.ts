@@ -3,16 +3,16 @@
 // Functions
 import {
   exchangePublicTokenForAccessToken,
-  getAccounts
+  getAccountsFromPlaid
 } from "@/functions/plaid"
 import {
-  createAccount,
-  deleteAccount,
-  getAccount
+  createAccountInDb,
+  deleteAccountFromDb,
+  getAccountFromDb
 } from "@/functions/db/accounts"
 import { revalidatePath } from "next/cache"
-import { createItem, getItem } from "@/functions/db/items"
 import { encryptAccessToken } from "@/functions/crypto/utils"
+import { createItemInDb, getItemFromDb } from "@/functions/db/items"
 
 export async function exchangePublicTokenForAccessTokenServerAction(
   userId: string,
@@ -21,7 +21,7 @@ export async function exchangePublicTokenForAccessTokenServerAction(
   const accessToken = await exchangePublicTokenForAccessToken(publicToken)
 
   // Add the Item to the database
-  const { item, accounts } = await getAccounts(accessToken)
+  const { item, accounts } = await getAccountsFromPlaid({ accessToken })
 
   const encryptionKey = process.env.KEY_IN_USE!
   const keyVersion = process.env.KEY_VERSION!
@@ -29,7 +29,7 @@ export async function exchangePublicTokenForAccessTokenServerAction(
   const { cipherText: encryptedAccessToken, keyVersion: encryptionKeyVersion } =
     encryptAccessToken(accessToken, encryptionKey, keyVersion)
 
-  await createItem({
+  await createItemInDb({
     id: item.item_id,
     userId,
     accessToken: encryptedAccessToken,
@@ -39,7 +39,7 @@ export async function exchangePublicTokenForAccessTokenServerAction(
 
   // Add each account associated with the Item to the database
   for (const account of accounts) {
-    await createAccount({
+    await createAccountInDb({
       id: account.account_id,
       itemId: item.item_id,
       name: account.name,
@@ -56,14 +56,14 @@ export async function deleteAccountServerAction(formData: FormData) {
   const { userId, accountId } = rawFormData
   if (!userId || !accountId) return
 
-  const account = await getAccount(accountId)
+  const account = await getAccountFromDb({ accountId })
   if (!account) return
 
-  const associatedItem = await getItem(account.itemId)
+  const associatedItem = await getItemFromDb({ itemId: account.itemId })
   if (!associatedItem) return
 
   if (associatedItem.userId !== userId) return
 
-  await deleteAccount(accountId)
+  await deleteAccountFromDb({ accountId })
   revalidatePath("/settings")
 }

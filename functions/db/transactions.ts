@@ -1,23 +1,35 @@
 import prisma from "@/functions/db"
-import { getUserItems } from "@/functions/db/items"
-import { getAccountsByItemId } from "@/functions/db/accounts"
+import { getItemsFromDb } from "@/functions/db/items"
+import { getAccountsFromDb } from "@/functions/db/accounts"
 import { decryptAccessToken } from "@/functions/crypto/utils"
 import type { Account, Transaction } from "@/generated/prisma"
-import { getAccounts, syncTransactions } from "@/functions/plaid"
+import { getAccountsFromPlaid, syncTransactions } from "@/functions/plaid"
 
-export async function getTransactions(accountId: string) {
+export async function getTransactionsFromDb({
+  accountId
+}: {
+  accountId: string
+}) {
   return await prisma.transaction.findMany({
     where: { accountId }
   })
 }
 
-export async function deleteTransaction(id: string) {
+export async function deleteTransactionFromDb({
+  transactionId
+}: {
+  transactionId: string
+}) {
   return await prisma.transaction.deleteMany({
-    where: { id }
+    where: { id: transactionId }
   })
 }
 
-export async function updateTransaction(transaction: Transaction) {
+export async function updateTransactionInDb({
+  transaction
+}: {
+  transaction: Transaction
+}) {
   return await prisma.transaction.update({
     where: { id: transaction.id },
     data: {
@@ -30,7 +42,11 @@ export async function updateTransaction(transaction: Transaction) {
   })
 }
 
-export async function createTransaction(transaction: Transaction) {
+export async function createTransactionInDb({
+  transaction
+}: {
+  transaction: Transaction
+}) {
   const existingTransaction = await prisma.transaction.findUnique({
     where: { id: transaction.id }
   })
@@ -51,10 +67,14 @@ export async function createTransaction(transaction: Transaction) {
   })
 }
 
-export async function getAccountsAndTransactions(userId: string) {
+export async function getAccountsAndTransactionsFromDb({
+  userId
+}: {
+  userId: string
+}) {
   const accounts: Account[] = []
   const transactions: Transaction[] = []
-  const userItems = await getUserItems(userId)
+  const userItems = await getItemsFromDb({ userId })
   const encryptionKey = process.env.KEY_IN_USE!
   const keyVersion = process.env.KEY_VERSION!
   for (const item of userItems) {
@@ -69,13 +89,17 @@ export async function getAccountsAndTransactions(userId: string) {
     await syncTransactions(accessToken)
 
     // Add accounts for the given Item to user's available accounts for filtering
-    const itemAccounts = await getAccountsByItemId(item.id)
+    const itemAccounts = await getAccountsFromDb({ itemId: item.id })
     accounts.push(...itemAccounts)
 
     // Aggregate transactions across Item accounts for rendering
-    const { accounts: accountsFromItem } = await getAccounts(accessToken)
+    const { accounts: accountsFromItem } = await getAccountsFromPlaid({
+      accessToken
+    })
     for (const account of accountsFromItem) {
-      const accountTransactions = await getTransactions(account.account_id)
+      const accountTransactions = await getTransactionsFromDb({
+        accountId: account.account_id
+      })
       transactions.push(...accountTransactions)
     }
   }

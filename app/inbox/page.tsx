@@ -1,7 +1,7 @@
 // Functions
 import { createLinkToken } from "@/functions/plaid"
 import { getOrCreateCurrentUser } from "@/lib/auth"
-import { getAccountsAndTransactions } from "@/functions/db/transactions"
+import { getAccountsAndTransactionsFromDb } from "@/functions/db/transactions"
 
 // Components
 import { Inbox } from "@/components/Inbox"
@@ -9,7 +9,9 @@ import { PlaidLink } from "@/components/PlaidLink"
 
 export default async function Plaid() {
   const user = await getOrCreateCurrentUser()
-  const { accounts, transactions } = await getAccountsAndTransactions(user.id)
+  const { accounts, transactions } = await getAccountsAndTransactionsFromDb({
+    userId: user.id
+  })
 
   async function PlaidLinkWrapper() {
     if (accounts.length !== 0) return <></>
