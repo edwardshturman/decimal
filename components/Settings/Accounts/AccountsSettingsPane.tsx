@@ -1,8 +1,8 @@
 // Functions
-import { getUserItems } from "@/functions/db/items"
+import { getItemsFromDb } from "@/functions/db/items"
 import { createLinkToken } from "@/functions/plaid"
 import { getOrCreateCurrentUser } from "@/lib/auth"
-import { getAccountsByItemId } from "@/functions/db/accounts"
+import { getAccountsFromDb } from "@/functions/db/accounts"
 import { deleteAccountServerAction } from "@/functions/actions"
 
 // Components
@@ -27,10 +27,10 @@ function AccountsListSkeleton() {
 }
 
 async function AccountsList({ userId }: { userId: string }) {
-  const userItems = await getUserItems(userId)
+  const userItems = await getItemsFromDb({ userId })
   const userAccounts: Account[] = []
   for (const item of userItems) {
-    const itemAccounts = await getAccountsByItemId(item.id)
+    const itemAccounts = await getAccountsFromDb({ itemId: item.id })
     userAccounts.push(...itemAccounts)
   }
 

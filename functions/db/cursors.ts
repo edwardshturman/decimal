@@ -5,7 +5,7 @@ type CursorInput = {
   string: string
 }
 
-export async function getCursor(accountId: string) {
+export async function getCursor({ accountId }: { accountId: string }) {
   return await prisma.cursor.findUnique({
     where: { accountId }
   })

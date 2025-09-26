@@ -9,9 +9,9 @@ import {
   type Transaction as PlaidTransaction
 } from "plaid"
 import {
-  createTransaction,
-  deleteTransaction,
-  updateTransaction
+  createTransactionInDb,
+  deleteTransactionFromDb,
+  updateTransactionInDb
 } from "@/functions/db/transactions"
 import { APP_NAME } from "@/lib/constants"
 import { Transaction } from "@/generated/prisma"
@@ -67,17 +67,29 @@ export async function exchangePublicTokenForAccessToken(publicToken: string) {
   return accessToken
 }
 
-export async function getItem(accessToken: string) {
+export async function getItemFromPlaid({
+  accessToken
+}: {
+  accessToken: string
+}) {
   const response = await client.itemGet({ access_token: accessToken })
   return response.data.item
 }
 
-export async function removeItem(accessToken: string) {
+export async function removeItemFromPlaid({
+  accessToken
+}: {
+  accessToken: string
+}) {
   const response = await client.itemRemove({ access_token: accessToken })
   return response.data.request_id
 }
 
-export async function getAccounts(accessToken: string) {
+export async function getAccountsFromPlaid({
+  accessToken
+}: {
+  accessToken: string
+}) {
   const accountsResponse = await client.accountsGet({
     access_token: accessToken
   })
@@ -103,9 +115,9 @@ function convertPlaidTransactionToDatabaseTransaction(
 }
 
 export async function syncTransactions(accessToken: string) {
-  const { accounts } = await getAccounts(accessToken)
+  const { accounts } = await getAccountsFromPlaid({ accessToken })
   for (const account of accounts) {
-    const cursorEntry = await getCursor(account.account_id)
+    const cursorEntry = await getCursor({ accountId: account.account_id })
     let cursor = cursorEntry?.string
 
     // Aggregate transactions since the last cursor
@@ -140,13 +152,13 @@ export async function syncTransactions(accessToken: string) {
     // TODO: Promise.all() or something to ensure atomicity
     const removedIds = removed.map((transaction) => transaction.transaction_id)
     for (const id of removedIds) {
-      await deleteTransaction(id)
+      await deleteTransactionFromDb({ transactionId: id })
     }
     for (const modifiedTransaction of modified) {
-      await updateTransaction(modifiedTransaction)
+      await updateTransactionInDb({ transaction: modifiedTransaction })
     }
     for (const addedTransaction of added) {
-      await createTransaction(addedTransaction)
+      await createTransactionInDb({ transaction: addedTransaction })
     }
 
     // Save the most recent cursor

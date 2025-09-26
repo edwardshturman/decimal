@@ -2,7 +2,7 @@ import NextAuth from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import type { NextAuthConfig, Session } from "next-auth"
 import { redirect, unauthorized } from "next/navigation"
-import { createUser, getUserByEmail } from "@/functions/db/users"
+import { createUser, getUser } from "@/functions/db/users"
 
 if (!process.env.GOOGLE_CLIENT_ID) {
   throw new Error("Missing env var GOOGLE_CLIENT_ID")
@@ -71,7 +71,7 @@ export async function getOrCreateCurrentUser() {
   const authorized = isAuthorized(session)
   if (!authorized) unauthorized()
 
-  let user = await getUserByEmail(session!.user!.email!)
+  let user = await getUser({ email: session!.user!.email! })
   if (!user) {
     user = await createUser({
       name: session!.user!.name!,
