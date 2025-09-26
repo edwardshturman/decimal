@@ -30,7 +30,7 @@ async function AccountsList({ userId }: { userId: string }) {
   const userItems = await getItemsFromDb({ userId })
   const userAccounts: Account[] = []
   for (const item of userItems) {
-    const itemAccounts = await getAccountsFromDb(item.id)
+    const itemAccounts = await getAccountsFromDb({ itemId: item.id })
     userAccounts.push(...itemAccounts)
   }
 
