@@ -15,6 +15,7 @@ import {
 } from "@/functions/db/transactions"
 import { APP_NAME } from "@/lib/constants"
 import { Transaction } from "@/generated/prisma"
+import { getAccountsFromDb } from "@/functions/db/accounts"
 import { createCursor, getCursor, updateCursor } from "@/functions/db/cursors"
 
 if (!process.env.PLAID_CLIENT_ID) {
@@ -115,9 +116,10 @@ function convertPlaidTransactionToDatabaseTransaction(
 }
 
 export async function syncTransactions(accessToken: string) {
-  const { accounts } = await getAccountsFromPlaid({ accessToken })
+  const item = await getItemFromPlaid({ accessToken })
+  const accounts = await getAccountsFromDb({ itemId: item.item_id })
   for (const account of accounts) {
-    const cursorEntry = await getCursor({ accountId: account.account_id })
+    const cursorEntry = await getCursor({ accountId: account.id })
     let cursor = cursorEntry?.string
 
     // Aggregate transactions since the last cursor
@@ -131,7 +133,7 @@ export async function syncTransactions(accessToken: string) {
         access_token: accessToken,
         cursor,
         options: {
-          account_id: account.account_id,
+          account_id: account.id,
           include_original_description: true
         }
       })
@@ -167,9 +169,9 @@ export async function syncTransactions(accessToken: string) {
       throw new Error("Cursor should not be undefined")
     }
     if (!cursorEntry) {
-      await createCursor({ accountId: account.account_id, string: cursor })
+      await createCursor({ accountId: account.id, string: cursor })
     } else {
-      await updateCursor({ accountId: account.account_id, string: cursor })
+      await updateCursor({ accountId: account.id, string: cursor })
     }
   }
 }
