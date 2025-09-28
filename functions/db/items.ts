@@ -52,6 +52,14 @@ export async function checkForRedundantItem(itemInput: CreateItemInput) {
   return isDuplicate
 }
 
+/**
+ * Creates an Item in the database.
+ * Does not run redundancy checks.
+ *
+ * @see {@link checkForRedundantItem} for redundancy logic.
+ * @param itemInput an object containing information about the new Item, and the user creating it
+ * @returns the created Item object
+ */
 export async function createItemInDb(itemInput: CreateItemInput) {
   return await prisma.item.create({
     data: {
