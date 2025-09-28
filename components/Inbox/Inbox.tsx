@@ -46,6 +46,28 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
     if (event.key === "ArrowUp") {
       setDirection("up")
     }
+    if (event.key === "j") {
+      event.preventDefault()
+      setDirection("down")
+      const currentIndex = transactions.indexOf(transaction)
+      const nextTransaction = transactions[currentIndex + 1]
+      if (!nextTransaction) return
+      setActiveId(nextTransaction.id)
+      liRefs.current[nextTransaction.id]?.focus({
+        preventScroll: true
+      })
+    }
+    if (event.key === "k") {
+      event.preventDefault()
+      setDirection("up")
+      const currentIndex = transactions.indexOf(transaction)
+      const previousTransaction = transactions[currentIndex - 1]
+      if (!previousTransaction) return
+      setActiveId(previousTransaction.id)
+      liRefs.current[previousTransaction.id]?.focus({
+        preventScroll: true
+      })
+    }
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault()
       handleSelect(transaction)
