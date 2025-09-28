@@ -22,7 +22,7 @@ model Item {
   id                   String    @id
   accessToken          String
   encryptionKeyVersion String
-  institutionName      String
+  institutionId        String    @default("")
   accounts             Account[] @relation("ItemAccounts")
   userId               String
   user                 User      @relation("UserItems", fields: [userId], references: [id])

@@ -34,7 +34,7 @@ export async function exchangePublicTokenForAccessTokenServerAction(
     userId,
     accessToken: encryptedAccessToken,
     encryptionKeyVersion,
-    institutionName: item.institution_name || ""
+    institutionId: item.institution_id || ""
   })
 
   // Add each account associated with the Item to the database

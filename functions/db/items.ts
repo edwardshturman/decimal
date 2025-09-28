@@ -5,7 +5,7 @@ type CreateItemInput = {
   userId: string
   accessToken: string
   encryptionKeyVersion: string
-  institutionName: string
+  institutionId: string
 }
 
 export async function getItemFromDb({ itemId }: { itemId: string }) {
@@ -27,7 +27,7 @@ export async function createItemInDb(itemInput: CreateItemInput) {
       userId: itemInput.userId,
       accessToken: itemInput.accessToken,
       encryptionKeyVersion: itemInput.encryptionKeyVersion,
-      institutionName: itemInput.institutionName
+      institutionId: itemInput.institutionId
     }
   })
 }
