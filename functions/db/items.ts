@@ -1,4 +1,6 @@
 import prisma from "@/functions/db"
+import { getAccountsFromPlaid } from "@/functions/plaid"
+import { getAccountFromDb } from "@/functions/db/accounts"
 
 type CreateItemInput = {
   id: string
@@ -18,6 +20,36 @@ export async function getItemsFromDb({ userId }: { userId: string }) {
   return await prisma.item.findMany({
     where: { userId }
   })
+}
+
+/**
+ * Matches a given new Item against existing institutions linked across a user's Items.
+ * If all Accounts from the new Item exist in the database already, the new Item is designated as redundant, and is not created in the database.
+ * The caller of this function should remove the new Item from Plaid.
+ *
+ * @param itemInput an object containing information about the new Item, and the user attempting to create it
+ * @returns `true` if redundant, `false` otherwise
+ */
+export async function checkForRedundantItem(itemInput: CreateItemInput) {
+  let isDuplicate = true
+  const existingUserItems = await getItemsFromDb({ userId: itemInput.userId })
+  const accountsUserWantsToAdd = (
+    await getAccountsFromPlaid({
+      accessToken: itemInput.accessToken
+    })
+  ).accounts
+
+  for (const item of existingUserItems) {
+    if (item.institutionId !== itemInput.institutionId) continue
+    for (const account of accountsUserWantsToAdd) {
+      const accountExistsInDb = await getAccountFromDb({
+        accountId: account.account_id
+      })
+      if (!accountExistsInDb) isDuplicate = false
+    }
+  }
+
+  return isDuplicate
 }
 
 export async function createItemInDb(itemInput: CreateItemInput) {

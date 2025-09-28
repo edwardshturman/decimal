@@ -3,8 +3,14 @@
 // Functions
 import {
   exchangePublicTokenForAccessToken,
-  getAccountsFromPlaid
+  getAccountsFromPlaid,
+  removeItemFromPlaid
 } from "@/functions/plaid"
+import {
+  checkForRedundantItem,
+  createItemInDb,
+  getItemFromDb
+} from "@/functions/db/items"
 import {
   createAccountInDb,
   deleteAccountFromDb,
@@ -12,7 +18,6 @@ import {
 } from "@/functions/db/accounts"
 import { revalidatePath } from "next/cache"
 import { encryptAccessToken } from "@/functions/crypto/utils"
-import { createItemInDb, getItemFromDb } from "@/functions/db/items"
 
 export async function exchangePublicTokenForAccessTokenServerAction(
   userId: string,
@@ -29,13 +34,17 @@ export async function exchangePublicTokenForAccessTokenServerAction(
   const { cipherText: encryptedAccessToken, keyVersion: encryptionKeyVersion } =
     encryptAccessToken(accessToken, encryptionKey, keyVersion)
 
-  await createItemInDb({
+  const createItemInput = {
     id: item.item_id,
     userId,
     accessToken: encryptedAccessToken,
     encryptionKeyVersion,
     institutionId: item.institution_id || ""
-  })
+  }
+
+  const isRedundantItem = await checkForRedundantItem(createItemInput)
+  if (isRedundantItem) return await removeItemFromPlaid({ accessToken })
+  await createItemInDb(createItemInput)
 
   // Add each account associated with the Item to the database
   for (const account of accounts) {
