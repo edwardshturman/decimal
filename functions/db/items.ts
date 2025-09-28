@@ -1,6 +1,6 @@
 import prisma from "@/functions/db"
 import { getAccountsFromPlaid } from "@/functions/plaid"
-import { getAccountFromDb } from "@/functions/db/accounts"
+import { matchAccountFromDb } from "@/functions/db/accounts"
 
 type CreateItemInput = {
   id: string
@@ -42,8 +42,9 @@ export async function checkForRedundantItem(itemInput: CreateItemInput) {
   for (const item of existingUserItems) {
     if (item.institutionId !== itemInput.institutionId) continue
     for (const account of accountsUserWantsToAdd) {
-      const accountExistsInDb = await getAccountFromDb({
-        accountId: account.account_id
+      const accountExistsInDb = await matchAccountFromDb({
+        name: account.name,
+        mask: account.mask
       })
       if (!accountExistsInDb) isDuplicate = false
     }
