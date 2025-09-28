@@ -25,12 +25,10 @@ export async function exchangePublicTokenForAccessTokenServerAction(
 ) {
   const accessToken = await exchangePublicTokenForAccessToken(publicToken)
 
-  // Add the Item to the database
   const { item, accounts } = await getAccountsFromPlaid({ accessToken })
 
   const encryptionKey = process.env.KEY_IN_USE!
   const keyVersion = process.env.KEY_VERSION!
-
   const { cipherText: encryptedAccessToken, keyVersion: encryptionKeyVersion } =
     encryptAccessToken(accessToken, encryptionKey, keyVersion)
 
@@ -46,8 +44,11 @@ export async function exchangePublicTokenForAccessTokenServerAction(
   if (isRedundantItem) return await removeItemFromPlaid({ accessToken })
   await createItemInDb(createItemInput)
 
-  // Add each account associated with the Item to the database
   for (const account of accounts) {
+    const accountExists = await getAccountFromDb({
+      accountId: account.account_id
+    })
+    if (accountExists) continue
     await createAccountInDb({
       id: account.account_id,
       itemId: item.item_id,
