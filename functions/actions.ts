@@ -14,7 +14,8 @@ import {
 import {
   createAccountInDb,
   deleteAccountFromDb,
-  getAccountFromDb
+  getAccountFromDb,
+  matchAccountFromDb
 } from "@/functions/db/accounts"
 import { revalidatePath } from "next/cache"
 import { encryptAccessToken } from "@/functions/crypto/utils"
@@ -45,8 +46,9 @@ export async function exchangePublicTokenForAccessTokenServerAction(
   await createItemInDb(createItemInput)
 
   for (const account of accounts) {
-    const accountExists = await getAccountFromDb({
-      accountId: account.account_id
+    const accountExists = await matchAccountFromDb({
+      name: account.name,
+      mask: account.mask
     })
     if (accountExists) continue
     await createAccountInDb({
