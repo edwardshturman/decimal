@@ -40,25 +40,30 @@ export async function checkForRedundantItem(itemInput: CreateItemInput) {
     encryptionKey,
     keyVersion
   )
-  const existingUserItems = await getItemsFromDb({ userId: itemInput.userId })
+
   const accountsUserWantsToAdd = (
     await getAccountsFromPlaid({
       accessToken: unencryptedAccessToken.plainText
     })
   ).accounts
 
-  for (const item of existingUserItems) {
-    if (item.institutionId !== itemInput.institutionId) continue
-    for (const account of accountsUserWantsToAdd) {
-      const accountExistsInDb = await matchAccountFromDb({
-        name: account.name,
-        mask: account.mask
-      })
-      if (!accountExistsInDb) return false
+  for (const account of accountsUserWantsToAdd) {
+    console.log(
+      `Examining Account user wants to add: ${account.name} ${account.mask}`
+    )
+    const accountExistsInDb = await matchAccountFromDb({
+      name: account.name,
+      mask: account.mask
+    })
+    if (!accountExistsInDb) {
+      console.log(
+        "Account does not exist in the database; Item is not redundant"
+      )
+      return false
     }
   }
 
-  console.log("Redundant Item: " + itemInput.institutionId)
+  console.log(`Redundant Item for institution ${itemInput.institutionId}`)
   return true
 }
 
