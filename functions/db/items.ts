@@ -1,4 +1,7 @@
 import prisma from "@/functions/db"
+import { getAccountsFromPlaid } from "@/functions/plaid"
+import { matchAccountFromDb } from "@/functions/db/accounts"
+import { decryptAccessToken } from "@/functions/crypto/utils"
 
 type CreateItemInput = {
   id: string
@@ -20,6 +23,58 @@ export async function getItemsFromDb({ userId }: { userId: string }) {
   })
 }
 
+/**
+ * Matches a given new Item against existing institutions linked across a user's Items.
+ * If all Accounts from the new Item exist in the database already, the new Item is designated as redundant, and is not created in the database.
+ * The caller of this function should remove the new Item from Plaid.
+ *
+ * @param itemInput an object containing information about the new Item, and the user attempting to create it
+ * @returns `true` if redundant, `false` otherwise
+ */
+export async function checkForRedundantItem(itemInput: CreateItemInput) {
+  const encryptionKey = process.env.KEY_IN_USE!
+  const keyVersion = itemInput.encryptionKeyVersion
+
+  const unencryptedAccessToken = decryptAccessToken(
+    itemInput.accessToken,
+    encryptionKey,
+    keyVersion
+  )
+
+  const accountsUserWantsToAdd = (
+    await getAccountsFromPlaid({
+      accessToken: unencryptedAccessToken.plainText
+    })
+  ).accounts
+
+  for (const account of accountsUserWantsToAdd) {
+    console.log(
+      `Examining Account user wants to add: ${account.name} ${account.mask}`
+    )
+    const accountExistsInDb = await matchAccountFromDb({
+      name: account.name,
+      mask: account.mask
+    })
+    if (!accountExistsInDb) {
+      console.log(
+        "Account does not exist in the database; Item is not redundant"
+      )
+      return false
+    }
+  }
+
+  console.log(`Redundant Item for institution ${itemInput.institutionId}`)
+  return true
+}
+
+/**
+ * Creates an Item in the database.
+ * Does not run redundancy checks.
+ *
+ * @see {@link checkForRedundantItem} for redundancy logic.
+ * @param itemInput an object containing information about the new Item, and the user creating it
+ * @returns the created Item object
+ */
 export async function createItemInDb(itemInput: CreateItemInput) {
   return await prisma.item.create({
     data: {

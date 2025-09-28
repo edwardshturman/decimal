@@ -21,6 +21,27 @@ export async function createAccountInDb(accountInput: CreateAccountInput) {
   })
 }
 
+/**
+ * Attempts to find an Account in the database by name and mask, as provided by Plaid.
+ *
+ * @param name Account name, e.g. "Discover it Card"
+ * @param mask Account mask, e.g. "1234"
+ * @returns an Account entry from the database if found, `null` otherwise
+ */
+export async function matchAccountFromDb({
+  name,
+  mask
+}: {
+  name: string
+  mask: string | null
+}) {
+  return await prisma.account.findFirst({
+    where: {
+      AND: { name, mask }
+    }
+  })
+}
+
 export async function getAccountFromDb({ accountId }: { accountId: string }) {
   return await prisma.account.findUnique({
     where: { id: accountId }

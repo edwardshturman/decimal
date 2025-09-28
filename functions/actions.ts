@@ -3,16 +3,22 @@
 // Functions
 import {
   exchangePublicTokenForAccessToken,
-  getAccountsFromPlaid
+  getAccountsFromPlaid,
+  removeItemFromPlaid
 } from "@/functions/plaid"
+import {
+  checkForRedundantItem,
+  createItemInDb,
+  getItemFromDb
+} from "@/functions/db/items"
 import {
   createAccountInDb,
   deleteAccountFromDb,
-  getAccountFromDb
+  getAccountFromDb,
+  matchAccountFromDb
 } from "@/functions/db/accounts"
 import { revalidatePath } from "next/cache"
 import { encryptAccessToken } from "@/functions/crypto/utils"
-import { createItemInDb, getItemFromDb } from "@/functions/db/items"
 
 export async function exchangePublicTokenForAccessTokenServerAction(
   userId: string,
@@ -20,25 +26,31 @@ export async function exchangePublicTokenForAccessTokenServerAction(
 ) {
   const accessToken = await exchangePublicTokenForAccessToken(publicToken)
 
-  // Add the Item to the database
   const { item, accounts } = await getAccountsFromPlaid({ accessToken })
 
   const encryptionKey = process.env.KEY_IN_USE!
   const keyVersion = process.env.KEY_VERSION!
-
   const { cipherText: encryptedAccessToken, keyVersion: encryptionKeyVersion } =
     encryptAccessToken(accessToken, encryptionKey, keyVersion)
 
-  await createItemInDb({
+  const createItemInput = {
     id: item.item_id,
     userId,
     accessToken: encryptedAccessToken,
     encryptionKeyVersion,
     institutionId: item.institution_id || ""
-  })
+  }
 
-  // Add each account associated with the Item to the database
+  const isRedundantItem = await checkForRedundantItem(createItemInput)
+  if (isRedundantItem) return await removeItemFromPlaid({ accessToken })
+  await createItemInDb(createItemInput)
+
   for (const account of accounts) {
+    const accountExists = await matchAccountFromDb({
+      name: account.name,
+      mask: account.mask
+    })
+    if (accountExists) continue
     await createAccountInDb({
       id: account.account_id,
       itemId: item.item_id,
@@ -46,6 +58,8 @@ export async function exchangePublicTokenForAccessTokenServerAction(
       mask: account.mask || undefined
     })
   }
+
+  revalidatePath("/settings")
 }
 
 export async function deleteAccountServerAction(formData: FormData) {
