@@ -1,6 +1,7 @@
 import prisma from "@/functions/db"
 import { getAccountsFromPlaid } from "@/functions/plaid"
 import { matchAccountFromDb } from "@/functions/db/accounts"
+import { decryptAccessToken } from "@/functions/crypto/utils"
 
 type CreateItemInput = {
   id: string
@@ -31,11 +32,18 @@ export async function getItemsFromDb({ userId }: { userId: string }) {
  * @returns `true` if redundant, `false` otherwise
  */
 export async function checkForRedundantItem(itemInput: CreateItemInput) {
-  let isDuplicate = true
+  const encryptionKey = process.env.KEY_IN_USE!
+  const keyVersion = itemInput.encryptionKeyVersion
+
+  const unencryptedAccessToken = decryptAccessToken(
+    itemInput.accessToken,
+    encryptionKey,
+    keyVersion
+  )
   const existingUserItems = await getItemsFromDb({ userId: itemInput.userId })
   const accountsUserWantsToAdd = (
     await getAccountsFromPlaid({
-      accessToken: itemInput.accessToken
+      accessToken: unencryptedAccessToken.plainText
     })
   ).accounts
 
@@ -46,11 +54,12 @@ export async function checkForRedundantItem(itemInput: CreateItemInput) {
         name: account.name,
         mask: account.mask
       })
-      if (!accountExistsInDb) isDuplicate = false
+      if (!accountExistsInDb) return false
     }
   }
 
-  return isDuplicate
+  console.log("Redundant Item: " + itemInput.institutionId)
+  return true
 }
 
 /**
