@@ -58,6 +58,8 @@ export async function exchangePublicTokenForAccessTokenServerAction(
       mask: account.mask || undefined
     })
   }
+
+  revalidatePath("/settings")
 }
 
 export async function deleteAccountServerAction(formData: FormData) {
