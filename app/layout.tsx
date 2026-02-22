@@ -10,6 +10,7 @@ import styles from "./Page.module.css"
 import { Inter, Roboto_Mono } from "next/font/google"
 
 // Components
+import { VercelToolbar } from "@vercel/toolbar/next"
 import { SignInOutWrapper } from "@/components/SignInOutWrapper"
 
 const inter = Inter({
@@ -32,6 +33,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const shouldInjectToolbar = process.env.NODE_ENV === "development"
   return (
     <html lang="en" className={`${inter.variable} ${robotoMono.variable}`}>
       <body className={styles.page}>
@@ -40,6 +42,7 @@ export default function RootLayout({
           <SignInOutWrapper />
         </header>
         {children}
+        {shouldInjectToolbar && <VercelToolbar />}
       </body>
     </html>
   )

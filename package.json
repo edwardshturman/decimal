@@ -10,14 +10,15 @@
   },
   "private": true,
   "scripts": {
+    "predev": "bun install",
+    "postinstall": "prisma generate",
     "dev": "next dev --turbopack",
     "pretty": "prettier . --check",
-    "prebuild": "bun run pretty",
-    "lint": "next lint",
+    "lint": "eslint .",
+    "prebuild": "bun run pretty && bun run lint",
     "prepare": "husky",
-    "build": "next build",
+    "build": "next build --turbopack",
     "start": "next start",
-    "postinstall": "prisma generate",
     "migrate": "dotenv -e .env.local prisma migrate dev",
     "refresh": "git pull && vc env pull"
   },
@@ -27,28 +28,32 @@
   "dependencies": {
     "@prisma/client": "6.14.0",
     "@radix-ui/react-roving-focus": "1.1.11",
+    "@vercel/toolbar": "0.2.2",
     "motion": "12.23.15",
-    "next": "15.5.0",
+    "next": "16.1.6",
     "next-auth": "5.0.0-beta.25",
     "plaid": "38.0.0",
-    "react": "19.1.1",
-    "react-dom": "19.1.1",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
     "react-plaid-link": "4.1.1",
     "react-random-reveal": "2.0.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "3.3.1",
     "@types/node": "24.3.0",
-    "@types/react": "19.1.10",
-    "@types/react-dom": "19.1.7",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
     "dotenv-cli": "10.0.0",
     "eslint": "9.33.0",
-    "eslint-config-next": "15.5.0",
+    "eslint-config-next": "16.1.6",
     "eslint-config-prettier": "10.1.8",
     "husky": "9.1.7",
     "lint-staged": "16.1.5",
     "prettier": "3.6.2",
     "prisma": "6.14.0",
     "typescript": "5.9.2"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }
