@@ -17,6 +17,7 @@ build/
 
 # TypeScript
 next-env.d.ts
+*.tsbuildinfo
 
 # Prisma
 /generated/prisma
