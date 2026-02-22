@@ -13,10 +13,10 @@ export default async function Plaid() {
     userId: user.id
   })
 
-  async function PlaidLinkWrapper() {
-    if (accounts.length !== 0) return <></>
+  let plaidLink = null
+  if (accounts.length === 0) {
     const linkTokenResponse = await createLinkToken(user.id)
-    return (
+    plaidLink = (
       <PlaidLink linkToken={linkTokenResponse.link_token} userId={user.id} />
     )
   }
@@ -24,7 +24,7 @@ export default async function Plaid() {
   return (
     <>
       <main>
-        <PlaidLinkWrapper />
+        {plaidLink}
         <Inbox transactions={transactions} />
       </main>
     </>

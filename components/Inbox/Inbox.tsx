@@ -9,11 +9,11 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
 // Hooks
 import {
-  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
-  useState
+  useState,
+  useSyncExternalStore
 } from "react"
 
 // Types
@@ -88,7 +88,7 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
     height: `${ROW_HEIGHT}px`
   })
 
-  const updateHighlight = useCallback((id: string) => {
+  function updateHighlight(id: string) {
     const ol = olRef.current
     const li = liRefs.current[id]
     if (!ol || !li) return
@@ -100,14 +100,17 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
       transform: `translateY(${liRect.top - olRect.top}px)`,
       height: `${liRect.height}px`
     })
-  }, [])
+  }
 
   useLayoutEffect(() => {
     updateHighlight(activeId)
-  }, [activeId, updateHighlight])
+  }, [activeId])
 
-  const [hasMounted, setHasMounted] = useState(false)
-  useEffect(() => setHasMounted(true), [])
+  const hasMounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  )
   const isServer = typeof window === "undefined"
   const shouldReduceMotion = useReducedMotion()
   const variants: Variants = {

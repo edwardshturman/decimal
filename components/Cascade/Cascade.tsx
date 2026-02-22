@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useSyncExternalStore } from "react"
 import { RandomReveal } from "react-random-reveal"
 
 export function Cascade({
@@ -10,12 +10,12 @@ export function Cascade({
   text: string
   duration?: number
 }) {
-  const [isLoaded, setIsLoaded] = useState(false)
+  const isLoaded = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  )
   const CHARACTERS = "0123456789$¢%+=".split("")
-
-  useEffect(() => {
-    setIsLoaded(true)
-  }, [])
 
   return isLoaded ? (
     <span>
