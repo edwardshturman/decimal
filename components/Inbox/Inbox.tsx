@@ -212,14 +212,14 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
                     index >= PAGINATE_DOWN_THRESHOLD &&
                     paginationEnd !== transactions.length
                   ) {
-                    setPaginationStart(paginationStart + 1)
-                    setPaginationEnd(paginationEnd + 1)
+                    setPaginationStart((prev) => prev + 1)
+                    setPaginationEnd((prev) => prev + 1)
                   }
 
                   // Go up when towards the top of the list
                   if (index <= PAGINATE_UP_THRESHOLD && paginationStart !== 0) {
-                    setPaginationStart(paginationStart - 1)
-                    setPaginationEnd(paginationEnd - 1)
+                    setPaginationStart((prev) => prev - 1)
+                    setPaginationEnd((prev) => prev - 1)
                   }
                 }}
               >
