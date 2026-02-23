@@ -24,6 +24,7 @@ import {
   decryptAccessToken,
   encryptAccessToken
 } from "@/functions/crypto/utils"
+import { after } from "next/server"
 import { revalidatePath } from "next/cache"
 
 export async function exchangePublicTokenForAccessTokenServerAction(
@@ -89,17 +90,20 @@ export async function deleteAccountServerAction(formData: FormData) {
 }
 
 export async function syncTransactionsServerAction(userId: string) {
-  const userItems = await getItemsFromDb({ userId })
-  const encryptionKey = process.env.KEY_IN_USE!
-  const keyVersion = process.env.KEY_VERSION!
-  for (const item of userItems) {
-    const { plainText: accessToken } = decryptAccessToken(
-      item.accessToken,
-      encryptionKey,
-      keyVersion
-    )
-    await syncTransactions(accessToken)
-  }
+  after(async () => {
+    const userItems = await getItemsFromDb({ userId })
+    const encryptionKey = process.env.KEY_IN_USE!
+    const keyVersion = process.env.KEY_VERSION!
+    for (const item of userItems) {
+      const { plainText: accessToken } = decryptAccessToken(
+        item.accessToken,
+        encryptionKey,
+        keyVersion
+      )
+      await syncTransactions(accessToken)
+    }
+    revalidatePath("/inbox")
+  })
 }
 
 export async function fireTestWebhookServerAction(formData: FormData) {
