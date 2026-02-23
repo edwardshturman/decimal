@@ -8,13 +8,7 @@ import {
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
 // Hooks
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  useSyncExternalStore
-} from "react"
+import { useEffect, useRef, useState, useSyncExternalStore } from "react"
 
 // Types
 import type { Variants } from "motion/react"
@@ -82,11 +76,6 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
   const CHEVRON_DIMENSIONS = 24
   const [activeId, setActiveId] = useState(transactions[0].id)
   const liRefs = useRef<Record<string, HTMLElement>>({})
-  const [highlightStyles, setHighlightStyles] = useState<CSSProperties>({
-    transform: "translateY(0px)",
-    height: `${ROW_HEIGHT}px`
-  })
-
   const hasMounted = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -116,23 +105,15 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
   const [paginationEnd, setPaginationEnd] = useState(ROW_COUNT)
   const [direction, setDirection] = useState<"up" | "down">("down")
 
-  function updateHighlight(id: string) {
-    const sorted = [...transactions].sort(
-      (a, b) => b.date.getTime() - a.date.getTime()
-    )
-    const globalIndex = sorted.findIndex((t) => t.id === id)
-    if (globalIndex === -1) return
-    const visibleIndex = globalIndex - paginationStart
-
-    setHighlightStyles({
-      transform: `translateY(${visibleIndex * ROW_HEIGHT}px)`,
-      height: `${ROW_HEIGHT}px`
-    })
+  const sorted = [...transactions].sort(
+    (a, b) => b.date.getTime() - a.date.getTime()
+  )
+  const globalIndex = sorted.findIndex((t) => t.id === activeId)
+  const visibleIndex = globalIndex === -1 ? 0 : globalIndex - paginationStart
+  const highlightStyles: CSSProperties = {
+    transform: `translateY(${visibleIndex * ROW_HEIGHT}px)`,
+    height: `${ROW_HEIGHT}px`
   }
-
-  useLayoutEffect(() => {
-    updateHighlight(activeId)
-  }, [activeId, paginationStart])
   const [lastInput, setLastInput] = useState<"keyboard" | "mouse">()
   useEffect(() => {
     function handleKey() {
