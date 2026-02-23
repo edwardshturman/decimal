@@ -8,13 +8,7 @@ import {
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
 // Hooks
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  useSyncExternalStore
-} from "react"
+import { useEffect, useRef, useState, useSyncExternalStore } from "react"
 
 // Types
 import type { Variants } from "motion/react"
@@ -81,31 +75,7 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
   const ROW_HEIGHT = 38
   const CHEVRON_DIMENSIONS = 24
   const [activeId, setActiveId] = useState(transactions[0].id)
-  const olRef = useRef<HTMLOListElement>(null)
   const liRefs = useRef<Record<string, HTMLElement>>({})
-  const [highlightStyles, setHighlightStyles] = useState<CSSProperties>({
-    transform: "translateY(0px)",
-    height: `${ROW_HEIGHT}px`
-  })
-
-  function updateHighlight(id: string) {
-    const ol = olRef.current
-    const li = liRefs.current[id]
-    if (!ol || !li) return
-
-    const olRect = ol.getBoundingClientRect()
-    const liRect = li.getBoundingClientRect()
-
-    setHighlightStyles({
-      transform: `translateY(${liRect.top - olRect.top}px)`,
-      height: `${liRect.height}px`
-    })
-  }
-
-  useLayoutEffect(() => {
-    updateHighlight(activeId)
-  }, [activeId])
-
   const hasMounted = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -134,6 +104,16 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
   const [paginationStart, setPaginationStart] = useState(0)
   const [paginationEnd, setPaginationEnd] = useState(ROW_COUNT)
   const [direction, setDirection] = useState<"up" | "down">("down")
+
+  const sorted = [...transactions].sort(
+    (a, b) => b.date.getTime() - a.date.getTime()
+  )
+  const globalIndex = sorted.findIndex((t) => t.id === activeId)
+  const visibleIndex = globalIndex === -1 ? 0 : globalIndex - paginationStart
+  const highlightStyles: CSSProperties = {
+    transform: `translateY(${visibleIndex * ROW_HEIGHT}px)`,
+    height: `${ROW_HEIGHT}px`
+  }
   const [lastInput, setLastInput] = useState<"keyboard" | "mouse">()
   useEffect(() => {
     function handleKey() {
@@ -185,12 +165,7 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
           />
         </svg>
       </div>
-      <ol
-        className={styles.list}
-        role="listbox"
-        aria-label="Transaction Inbox"
-        ref={olRef}
-      >
+      <ol className={styles.list} role="listbox" aria-label="Transaction Inbox">
         <div className={styles.highlight} style={highlightStyles} />
         <AnimatePresence mode="popLayout">
           {transactions
