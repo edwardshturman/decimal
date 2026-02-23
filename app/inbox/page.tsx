@@ -25,7 +25,7 @@ export default async function Plaid() {
     <>
       <main>
         {plaidLink}
-        <Inbox transactions={transactions} />
+        {transactions.length !== 0 && <Inbox transactions={transactions} />}
       </main>
     </>
   )
