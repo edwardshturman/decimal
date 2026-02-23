@@ -6,7 +6,9 @@ import {
   PlaidEnvironments,
   Products,
   type RemovedTransaction,
-  type Transaction as PlaidTransaction
+  type Transaction as PlaidTransaction,
+  WebhookType,
+  SandboxItemFireWebhookRequestWebhookCodeEnum
 } from "plaid"
 import {
   createTransactionInDb,
@@ -52,7 +54,10 @@ export async function createLinkToken(userId: string) {
     client_name: APP_NAME,
     products: PLAID_PRODUCTS,
     country_codes: PLAID_COUNTRY_CODES,
-    language: "en"
+    language: "en",
+    webhook:
+      process.env.WEBHOOK_URL ||
+      `https://${process.env.VERCEL_URL}/api/webhooks/plaid`
   }
 
   const response = await client.linkTokenCreate(linkTokenConfig)
@@ -174,4 +179,19 @@ export async function syncTransactions(accessToken: string) {
       await updateCursor({ accountId: account.id, string: cursor })
     }
   }
+}
+
+export async function fireTestWebhook({
+  accessToken
+}: {
+  accessToken: string
+}) {
+  const fireWebhookResponse = await client.sandboxItemFireWebhook({
+    access_token: accessToken,
+    webhook_type: WebhookType.Transactions,
+    webhook_code:
+      SandboxItemFireWebhookRequestWebhookCodeEnum.SyncUpdatesAvailable
+  })
+
+  return fireWebhookResponse.data
 }

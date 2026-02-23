@@ -3,13 +3,15 @@
 // Functions
 import {
   exchangePublicTokenForAccessToken,
+  fireTestWebhook,
   getAccountsFromPlaid,
   removeItemFromPlaid
 } from "@/functions/plaid"
 import {
   checkForRedundantItem,
   createItemInDb,
-  getItemFromDb
+  getItemFromDb,
+  getItemsFromDb
 } from "@/functions/db/items"
 import {
   createAccountInDb,
@@ -17,8 +19,11 @@ import {
   getAccountFromDb,
   matchAccountFromDb
 } from "@/functions/db/accounts"
+import {
+  decryptAccessToken,
+  encryptAccessToken
+} from "@/functions/crypto/utils"
 import { revalidatePath } from "next/cache"
-import { encryptAccessToken } from "@/functions/crypto/utils"
 
 export async function exchangePublicTokenForAccessTokenServerAction(
   userId: string,
@@ -80,4 +85,22 @@ export async function deleteAccountServerAction(formData: FormData) {
 
   await deleteAccountFromDb({ accountId })
   revalidatePath("/settings")
+}
+
+export async function fireTestWebhookServerAction(formData: FormData) {
+  const rawFormData = { userId: formData.get("userId")?.toString() }
+  const { userId } = rawFormData
+  if (!userId) return
+
+  const userItems = await getItemsFromDb({ userId })
+  const firstAccessTokenEncrypted = userItems[0].accessToken
+  const encryptionKey = process.env.KEY_IN_USE!
+  const keyVersion = process.env.KEY_VERSION!
+  const firstAccessToken = decryptAccessToken(
+    firstAccessTokenEncrypted,
+    encryptionKey,
+    keyVersion
+  ).plainText
+
+  await fireTestWebhook({ accessToken: firstAccessToken })
 }
