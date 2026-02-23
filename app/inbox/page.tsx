@@ -6,7 +6,6 @@ import { getAccountsAndTransactionsFromDb } from "@/functions/db/transactions"
 // Components
 import { Inbox } from "@/components/Inbox"
 import { PlaidLink } from "@/components/PlaidLink"
-import { fireTestWebhookServerAction } from "@/functions/actions"
 
 export default async function Plaid() {
   const user = await getOrCreateCurrentUser()
@@ -27,10 +26,6 @@ export default async function Plaid() {
       <main>
         {plaidLink}
         <Inbox transactions={transactions} />
-        <form action={fireTestWebhookServerAction}>
-          <input hidden readOnly name="userId" value={user.id ?? ""} />
-          <input type="submit" value="Fire test webbook" />
-        </form>
       </main>
     </>
   )
