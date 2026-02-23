@@ -49,7 +49,7 @@ const client = new PlaidApi(configuration)
 export async function createLinkToken(userId: string) {
   const webhookUrl =
     process.env.WEBHOOK_URL ||
-    `https://${process.env.VERCEL_URL}/api/webhooks/plaid`
+    `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}/api/webhooks/plaid`
 
   const linkTokenConfig: LinkTokenCreateRequest = {
     user: {
