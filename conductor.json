@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "setup": "vc link --scope compsigh --project decimal --yes && bun run refresh && bun install",
+    "setup": "vc link --scope compsigh --project decimal --yes && vc env pull && bun install",
     "run": "bun dev",
     "archive": "rm -rf node_modules/"
   }

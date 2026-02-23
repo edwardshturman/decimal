@@ -47,6 +47,10 @@ const configuration = new Configuration({
 const client = new PlaidApi(configuration)
 
 export async function createLinkToken(userId: string) {
+  const webhookUrl =
+    process.env.WEBHOOK_URL ||
+    `https://${process.env.VERCEL_URL}/api/webhooks/plaid`
+
   const linkTokenConfig: LinkTokenCreateRequest = {
     user: {
       client_user_id: userId
@@ -55,11 +59,10 @@ export async function createLinkToken(userId: string) {
     products: PLAID_PRODUCTS,
     country_codes: PLAID_COUNTRY_CODES,
     language: "en",
-    webhook:
-      process.env.WEBHOOK_URL ||
-      `https://${process.env.VERCEL_URL}/api/webhooks/plaid`
+    webhook: webhookUrl
   }
 
+  console.log("[Plaid] Creating link token with webhook URL:", webhookUrl)
   const response = await client.linkTokenCreate(linkTokenConfig)
   return response.data
 }
@@ -193,5 +196,9 @@ export async function fireTestWebhook({
       SandboxItemFireWebhookRequestWebhookCodeEnum.SyncUpdatesAvailable
   })
 
+  console.log(
+    "[Plaid] Fire webhook response:",
+    JSON.stringify(fireWebhookResponse.data, null, 2)
+  )
   return fireWebhookResponse.data
 }
