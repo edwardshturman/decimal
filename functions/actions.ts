@@ -5,7 +5,8 @@ import {
   exchangePublicTokenForAccessToken,
   fireTestWebhook,
   getAccountsFromPlaid,
-  removeItemFromPlaid
+  removeItemFromPlaid,
+  syncTransactions
 } from "@/functions/plaid"
 import {
   checkForRedundantItem,
@@ -85,6 +86,20 @@ export async function deleteAccountServerAction(formData: FormData) {
 
   await deleteAccountFromDb({ accountId })
   revalidatePath("/settings")
+}
+
+export async function syncTransactionsServerAction(userId: string) {
+  const userItems = await getItemsFromDb({ userId })
+  const encryptionKey = process.env.KEY_IN_USE!
+  const keyVersion = process.env.KEY_VERSION!
+  for (const item of userItems) {
+    const { plainText: accessToken } = decryptAccessToken(
+      item.accessToken,
+      encryptionKey,
+      keyVersion
+    )
+    await syncTransactions(accessToken)
+  }
 }
 
 export async function fireTestWebhookServerAction(formData: FormData) {

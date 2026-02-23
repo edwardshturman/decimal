@@ -1,9 +1,9 @@
 import prisma from "@/functions/db"
 import { getItemsFromDb } from "@/functions/db/items"
+import { getAccountsFromPlaid } from "@/functions/plaid"
 import { getAccountsFromDb } from "@/functions/db/accounts"
 import { decryptAccessToken } from "@/functions/crypto/utils"
 import type { Account, Transaction } from "@/generated/prisma"
-import { getAccountsFromPlaid, syncTransactions } from "@/functions/plaid"
 
 export async function getTransactionsFromDb({
   accountId
@@ -84,9 +84,6 @@ export async function getAccountsAndTransactionsFromDb({
       encryptionKey,
       keyVersion
     )
-
-    // Sync transactions from Plaid → db, across all accounts for the given Item
-    await syncTransactions(accessToken)
 
     // Add accounts for the given Item to user's available accounts for filtering
     const itemAccounts = await getAccountsFromDb({ itemId: item.id })
