@@ -7,7 +7,10 @@ import { Button } from "@/components/Button"
 import { type PlaidLinkOptions, usePlaidLink } from "react-plaid-link"
 
 // Server Actions
-import { exchangePublicTokenForAccessTokenServerAction } from "@/functions/actions"
+import {
+  exchangePublicTokenForAccessTokenServerAction,
+  syncTransactionsServerAction
+} from "@/functions/actions"
 
 export function PlaidLink({
   userId,
@@ -18,6 +21,7 @@ export function PlaidLink({
 }) {
   async function onSuccess(public_token: string) {
     await exchangePublicTokenForAccessTokenServerAction(userId, public_token)
+    await syncTransactionsServerAction(userId)
   }
 
   const config: PlaidLinkOptions = {
