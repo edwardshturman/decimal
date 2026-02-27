@@ -5,26 +5,22 @@ button.button {
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  padding: 12px 48px;
-  border: 2px dashed var(--color-dark-blue);
-  background-color: var(--color-dark-blue-10);
-  color: var(--color-foreground);
+  padding: 4px 6px;
+  border: none;
+  border-radius: 6px;
+  color: var(--color-accent);
+  background-color: var(--color-accent-10);
   transition:
     background-color 0.3s ease,
     scale 150ms ease;
 
-  font-family: var(--font-mono);
-  font-style: normal;
-  font-weight: 500;
+  font-family: var(--font-sans);
   font-size: 1rem;
   line-height: 1.2em;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
 }
 
 button.button:hover {
-  background-color: var(--color-dark-blue);
-  color: var(--color-background);
+  background-color: var(--color-accent-20);
 }
 
 button.button:active {
