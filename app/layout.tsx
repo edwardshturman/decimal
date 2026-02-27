@@ -7,20 +7,63 @@ import type { Metadata } from "next"
 // Styles
 import "./globals.css"
 import styles from "./Page.module.css"
-import { Inter, Roboto_Mono } from "next/font/google"
+import localFont from "next/font/local"
 
 // Components
 import { VercelToolbar } from "@vercel/toolbar/next"
 import { SignInOutWrapper } from "@/components/SignInOutWrapper"
+import { BackToInbox } from "@/components/BackToInbox"
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"]
+const iAWriterQuattro = localFont({
+  src: [
+    {
+      path: "../public/fonts/iAWriterQuattroS-Regular.woff2",
+      weight: "400",
+      style: "normal"
+    },
+    {
+      path: "../public/fonts/iAWriterQuattroS-Italic.woff2",
+      weight: "400",
+      style: "italic"
+    },
+    {
+      path: "../public/fonts/iAWriterQuattroS-Bold.woff2",
+      weight: "600",
+      style: "normal"
+    },
+    {
+      path: "../public/fonts/iAWriterQuattroS-BoldItalic.woff2",
+      weight: "600",
+      style: "italic"
+    }
+  ],
+  variable: "--font-ia-writer-quattro"
 })
 
-const robotoMono = Roboto_Mono({
-  variable: "--font-roboto-mono",
-  subsets: ["latin"]
+const iAWriterMono = localFont({
+  src: [
+    {
+      path: "../public/fonts/iAWriterMonoS-Regular.woff2",
+      weight: "400",
+      style: "normal"
+    },
+    {
+      path: "../public/fonts/iAWriterMonoS-Italic.woff2",
+      weight: "400",
+      style: "italic"
+    },
+    {
+      path: "../public/fonts/iAWriterMonoS-Bold.woff2",
+      weight: "600",
+      style: "normal"
+    },
+    {
+      path: "../public/fonts/iAWriterMonoS-BoldItalic.woff2",
+      weight: "600",
+      style: "italic"
+    }
+  ],
+  variable: "--font-ia-writer-mono"
 })
 
 export const metadata: Metadata = {
@@ -35,11 +78,14 @@ export default function RootLayout({
 }>) {
   const shouldInjectToolbar = process.env.NODE_ENV === "development"
   return (
-    <html lang="en" className={`${inter.variable} ${robotoMono.variable}`}>
+    <html
+      lang="en"
+      className={`${iAWriterQuattro.variable} ${iAWriterMono.variable}`}
+    >
       <body className={styles.page}>
         <header className={styles.header}>
-          <h1 className={styles.title}>{APP_NAME}</h1>
           <SignInOutWrapper />
+          <BackToInbox />
         </header>
         {children}
         {shouldInjectToolbar && <VercelToolbar />}

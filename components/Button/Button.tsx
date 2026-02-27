@@ -1,7 +1,5 @@
 "use client"
 
-import { useState } from "react"
-import { Cascade } from "@/components/Cascade"
 import styles from "./Button.module.css"
 
 type ButtonProps = React.DetailedHTMLProps<
@@ -10,16 +8,9 @@ type ButtonProps = React.DetailedHTMLProps<
 >
 
 export function Button({ children, ...props }: ButtonProps) {
-  const [hovered, setHovered] = useState(false)
   return (
-    <button
-      className={styles.button}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      {...props}
-    >
-      {!hovered && <span>{children}</span>}
-      {hovered && <Cascade text={children as string} duration={0.3} />}
+    <button className={styles.button} {...props}>
+      {children}
     </button>
   )
 }

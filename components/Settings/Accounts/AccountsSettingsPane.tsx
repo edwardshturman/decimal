@@ -39,7 +39,7 @@ async function AccountsList({ userId }: { userId: string }) {
       {userAccounts.map((account) => {
         return (
           <li key={account.id}>
-            <span>{account.id.slice(1, 6)}</span>
+            <span className={styles.id}>{account.id.slice(1, 6)}</span>
             <span className={styles.name}>{account.name}</span>
             <span className={styles.remove}>
               <form action={deleteAccountServerAction}>
@@ -50,7 +50,7 @@ async function AccountsList({ userId }: { userId: string }) {
                   name="accountId"
                   value={account.id ?? ""}
                 />
-                <input type="submit" value="Remove" />
+                <input type="submit" value="× Remove" />
               </form>
             </span>
           </li>
