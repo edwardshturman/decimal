@@ -5,22 +5,10 @@ body.page {
 }
 
 header.header {
+  width: 100%;
   display: flex;
-  flex-direction: row;
+  flex-direction: row-reverse;
   justify-content: space-between;
   margin-top: 100px;
   margin-bottom: 38px;
-}
-
-h1.title {
-  font-size: 3rem;
-  font-weight: 500;
-  color: var(--color-dark-blue);
-  padding-left: 12px; /* Optically align with Inbox */
-}
-
-h1.title::before {
-  content: "●";
-  position: absolute;
-  margin-left: -48px;
 }

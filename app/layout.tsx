@@ -12,6 +12,7 @@ import localFont from "next/font/local"
 // Components
 import { VercelToolbar } from "@vercel/toolbar/next"
 import { SignInOutWrapper } from "@/components/SignInOutWrapper"
+import { BackToInbox } from "@/components/BackToInbox"
 
 const iAWriterQuattro = localFont({
   src: [
@@ -83,8 +84,8 @@ export default function RootLayout({
     >
       <body className={styles.page}>
         <header className={styles.header}>
-          <h1 className={styles.title}>{APP_NAME}</h1>
           <SignInOutWrapper />
+          <BackToInbox />
         </header>
         {children}
         {shouldInjectToolbar && <VercelToolbar />}
