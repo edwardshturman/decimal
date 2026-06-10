@@ -11,7 +11,7 @@ import { PlaidLink } from "@/components/PlaidLink"
 import { SettingsPane } from "@/components/Settings/Pane"
 
 // Types
-import type { Account } from "@/generated/prisma"
+import type { Account } from "@/generated/prisma/client"
 
 // Styles
 import styles from "./AccountsSettingsPane.module.css"

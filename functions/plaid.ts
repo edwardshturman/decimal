@@ -16,7 +16,7 @@ import {
   updateTransactionInDb
 } from "@/functions/db/transactions"
 import { APP_NAME } from "@/lib/constants"
-import { Transaction } from "@/generated/prisma"
+import { Transaction } from "@/generated/prisma/client"
 import { getAccountsFromDb } from "@/functions/db/accounts"
 import { createCursor, getCursor, updateCursor } from "@/functions/db/cursors"
 

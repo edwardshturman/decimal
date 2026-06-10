@@ -3,7 +3,7 @@ import { getItemsFromDb } from "@/functions/db/items"
 import { getAccountsFromPlaid } from "@/functions/plaid"
 import { getAccountsFromDb } from "@/functions/db/accounts"
 import { decryptAccessToken } from "@/functions/crypto/utils"
-import type { Account, Transaction } from "@/generated/prisma"
+import type { Account, Transaction } from "@/generated/prisma/client"
 
 export async function getTransactionsFromDb({
   accountId

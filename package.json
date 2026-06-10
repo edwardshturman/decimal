@@ -29,7 +29,8 @@
     ]
   },
   "dependencies": {
-    "@prisma/client": "6.14.0",
+    "@prisma/adapter-pg": "7.8.0",
+    "@prisma/client": "7.8.0",
     "@radix-ui/react-roving-focus": "1.1.11",
     "@vercel/toolbar": "0.2.2",
     "motion": "12.23.15",
@@ -48,12 +49,12 @@
     "dotenv-cli": "10.0.0",
     "eslint": "9.33.0",
     "eslint-config-next": "16.2.9",
-    "next-devtools-mcp": "0.3.10",
     "eslint-config-prettier": "10.1.8",
     "husky": "9.1.7",
     "lint-staged": "16.1.5",
+    "next-devtools-mcp": "0.3.10",
     "prettier": "3.6.2",
-    "prisma": "6.14.0",
+    "prisma": "7.8.0",
     "typescript": "5.9.2"
   },
   "engines": {
