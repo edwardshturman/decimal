@@ -15,6 +15,16 @@ export async function getTransactionsFromDb({
   })
 }
 
+export async function getTransactionFromDb({
+  transactionId
+}: {
+  transactionId: string
+}) {
+  return await prisma.transaction.findUnique({
+    where: { id: transactionId }
+  })
+}
+
 export async function deleteTransactionFromDb({
   transactionId
 }: {
@@ -22,6 +32,28 @@ export async function deleteTransactionFromDb({
 }) {
   return await prisma.transaction.deleteMany({
     where: { id: transactionId }
+  })
+}
+
+export async function promotePendingTransactionInDb({
+  pendingId,
+  postedTransaction
+}: {
+  pendingId: string
+  postedTransaction: Transaction
+}) {
+  return await prisma.transaction.update({
+    where: { id: pendingId },
+    data: {
+      id: postedTransaction.id,
+      name: postedTransaction.name,
+      amount: postedTransaction.amount,
+      date: postedTransaction.date,
+      pending: postedTransaction.pending,
+      currencyCode: postedTransaction.currencyCode,
+      pendingTransactionId: postedTransaction.pendingTransactionId,
+      updatedAt: new Date()
+    }
   })
 }
 
