@@ -38,7 +38,7 @@ This project (named Decimal, for the moment) is a minimalist, web-based expense 
 
 - Server Actions (form submissions, Plaid operations, or other mutations) are stored in `functions/actions.ts`
 - Plaid SDK wrapper functions (Link token exchange, calling endpoints like Transactions Sync, etc.) are stored in `functions/plaid.ts`
-- The data layer, oen file per model, is written in `db/`
+- The data layer, one file per model, is written in `db/`
 - The database schema configuration & migrations are in `prisma/`
 - Plaid access tokens are encrypted with AES-256-GCM in `crypto/utils.ts`
 - Some shared utilities like constants & authentication can be found in `lib/`
