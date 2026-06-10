@@ -15,7 +15,7 @@ import type { Variants } from "motion/react"
 import type { CSSProperties, KeyboardEvent, MouseEvent } from "react"
 
 import styles from "./Inbox.module.css"
-import { Transaction } from "@/generated/prisma"
+import { Transaction } from "@/generated/prisma/client"
 
 export function Inbox({ transactions }: { transactions: Transaction[] }) {
   function handleSelect(transaction: Transaction) {
