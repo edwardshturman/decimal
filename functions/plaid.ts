@@ -116,7 +116,7 @@ function convertPlaidTransactionToDatabaseTransaction(
     amount: plaidTransaction.amount,
     date: new Date(plaidTransaction.authorized_date || plaidTransaction.date),
     pending: plaidTransaction.pending,
-    // TODO: use pending_transaction_id
+    pendingTransactionId: plaidTransaction.pending_transaction_id || null,
     createdAt: new Date(),
     updatedAt: new Date()
   }
