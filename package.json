@@ -43,6 +43,7 @@
     "react-random-reveal": "2.0.1"
   },
   "devDependencies": {
+    "@types/bun": "1.3.14",
     "@types/node": "25.9.2",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",

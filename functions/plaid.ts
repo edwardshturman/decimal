@@ -13,10 +13,13 @@ import {
 import {
   createTransactionInDb,
   deleteTransactionFromDb,
+  getTransactionFromDb,
+  promotePendingTransactionInDb,
   updateTransactionInDb
 } from "@/functions/db/transactions"
 import { APP_NAME } from "@/lib/constants"
 import { Transaction } from "@/generated/prisma/client"
+import { planSyncOperations } from "@/functions/reconcile"
 import { getAccountsFromDb } from "@/functions/db/accounts"
 import { createCursor, getCursor, updateCursor } from "@/functions/db/cursors"
 
@@ -116,7 +119,7 @@ function convertPlaidTransactionToDatabaseTransaction(
     amount: plaidTransaction.amount,
     date: new Date(plaidTransaction.authorized_date || plaidTransaction.date),
     pending: plaidTransaction.pending,
-    // TODO: use pending_transaction_id
+    pendingTransactionId: plaidTransaction.pending_transaction_id || null,
     createdAt: new Date(),
     updatedAt: new Date()
   }
@@ -158,17 +161,43 @@ export async function syncTransactions(accessToken: string) {
       cursor = data.next_cursor
     }
 
+    // Determine which pending transactions referenced by posted (added) transactions are still stored, so a pending → posted transition can be promoted rather than recreated
+    const storedPendingIds = new Set<string>()
+    for (const addedTransaction of added) {
+      const pendingId = addedTransaction.pendingTransactionId
+      if (!pendingId) continue
+      const existing = await getTransactionFromDb({ transactionId: pendingId })
+      if (existing) storedPendingIds.add(pendingId)
+    }
+
     // Update database entries
     // TODO: Promise.all() or something to ensure atomicity
-    const removedIds = removed.map((transaction) => transaction.transaction_id)
-    for (const id of removedIds) {
-      await deleteTransactionFromDb({ transactionId: id })
-    }
-    for (const modifiedTransaction of modified) {
-      await updateTransactionInDb({ transaction: modifiedTransaction })
-    }
-    for (const addedTransaction of added) {
-      await createTransactionInDb({ transaction: addedTransaction })
+    const operations = planSyncOperations({
+      added,
+      modified,
+      removed: removed.map((transaction) => transaction.transaction_id),
+      storedPendingIds
+    })
+    for (const operation of operations) {
+      switch (operation.type) {
+        case "delete":
+          await deleteTransactionFromDb({
+            transactionId: operation.transactionId
+          })
+          break
+        case "update":
+          await updateTransactionInDb({ transaction: operation.transaction })
+          break
+        case "create":
+          await createTransactionInDb({ transaction: operation.transaction })
+          break
+        case "promote":
+          await promotePendingTransactionInDb({
+            pendingId: operation.pendingId,
+            postedTransaction: operation.postedTransaction
+          })
+          break
+      }
     }
 
     // Save the most recent cursor

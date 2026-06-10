@@ -42,16 +42,17 @@ model Account {
 }
 
 model Transaction {
-  id           String   @id
-  accountId    String
-  currencyCode String
-  amount       Float
-  date         DateTime @default(now())
-  name         String
-  pending      Boolean
-  account      Account  @relation("AccountTransactions", fields: [accountId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @default(now())
+  id                   String   @id
+  accountId            String
+  currencyCode         String
+  amount               Float
+  date                 DateTime @default(now())
+  name                 String
+  pending              Boolean
+  pendingTransactionId String?
+  account              Account  @relation("AccountTransactions", fields: [accountId], references: [id])
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @default(now())
 }
 
 model Cursor {
