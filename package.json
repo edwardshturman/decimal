@@ -31,8 +31,10 @@
   "dependencies": {
     "@prisma/adapter-pg": "7.8.0",
     "@prisma/client": "7.8.0",
+    "@radix-ui/react-dialog": "1.1.16",
     "@radix-ui/react-roving-focus": "1.1.11",
     "@vercel/toolbar": "0.2.2",
+    "cmdk": "1.1.1",
     "motion": "12.23.15",
     "next": "16.2.9",
     "next-auth": "5.0.0-beta.25",

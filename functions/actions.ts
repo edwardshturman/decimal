@@ -26,6 +26,9 @@ import {
 } from "@/functions/crypto/utils"
 import { after } from "next/server"
 import { revalidatePath } from "next/cache"
+import { getOrCreateCurrentUser } from "@/lib/auth"
+import { getTransactionFromDb } from "@/functions/db/transactions"
+import { upsertTransactionOverrideSetInDb } from "@/functions/db/transactionOverrideSets"
 
 export async function exchangePublicTokenForAccessTokenServerAction(
   userId: string,
@@ -104,6 +107,32 @@ export async function syncTransactionsServerAction(userId: string) {
     }
     revalidatePath("/inbox")
   })
+}
+
+export async function renameTransactionServerAction(
+  transactionId: string,
+  name: string
+) {
+  const user = await getOrCreateCurrentUser()
+
+  const transaction = await getTransactionFromDb({ transactionId })
+  if (!transaction) return
+
+  const account = await getAccountFromDb({ accountId: transaction.accountId })
+  if (!account) return
+
+  const item = await getItemFromDb({ itemId: account.itemId })
+  if (!item) return
+
+  if (item.userId !== user.id) return
+
+  const trimmed = name.trim()
+  await upsertTransactionOverrideSetInDb({
+    transactionId,
+    name: trimmed === "" ? null : trimmed
+  })
+
+  revalidatePath("/inbox")
 }
 
 export async function fireTestWebhookServerAction(formData: FormData) {
