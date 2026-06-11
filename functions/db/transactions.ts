@@ -11,7 +11,8 @@ export async function getTransactionsFromDb({
   accountId: string
 }) {
   return await prisma.transaction.findMany({
-    where: { accountId }
+    where: { accountId },
+    include: { overrides: true }
   })
 }
 
@@ -129,7 +130,15 @@ export async function getAccountsAndTransactionsFromDb({
       const accountTransactions = await getTransactionsFromDb({
         accountId: account.account_id
       })
-      transactions.push(...accountTransactions)
+
+      // Resolve the user's overrides (e.g. a rename) into the displayed fields, keeping the Plaid-sourced values as the fallback
+      const resolved = accountTransactions.map(
+        ({ overrides, ...transaction }) => ({
+          ...transaction,
+          name: overrides?.name ?? transaction.name
+        })
+      )
+      transactions.push(...resolved)
     }
   }
 
