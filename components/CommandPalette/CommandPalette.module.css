@@ -20,7 +20,7 @@
   overflow: hidden;
   background: var(--color-background);
   border-radius: 12px;
-  box-shadow: 0 16px 48px hsla(210deg, 100%, 4%, 0.2);
+  box-shadow: 0 16px 48px var(--shadow-tinted);
   font-family: var(--font-mono);
 }
 
