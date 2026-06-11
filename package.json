@@ -18,8 +18,10 @@
     "format:write": "prettier . --write --ignore-unknown",
     "prebuild": "bun run lint && bun run format:check",
     "build": "next build --turbopack",
+    "vercel-build": "prisma migrate deploy && bun run build",
     "start": "next start",
-    "migrate": "dotenv -e .env.local prisma migrate dev",
+    "migrate:dev": "dotenv -e .env.local prisma migrate dev",
+    "migrate:deploy": "dotenv -e .env.production prisma migrate deploy",
     "refresh": "git pull && vc env pull"
   },
   "lint-staged": {
