@@ -30,11 +30,105 @@ import { renameTransactionServerAction } from "@/functions/actions"
 import styles from "./Inbox.module.css"
 
 export function Inbox({ transactions }: { transactions: Transaction[] }) {
+  // Layout constants
+  const ROW_HEIGHT = 38
+  const CHEVRON_DIMENSIONS = 24
+  const ROW_COUNT = 11
+  const PAGINATE_UP_THRESHOLD = 2
+  const PAGINATE_DOWN_THRESHOLD = 8
+
+  // State & refs
+  const [activeId, setActiveId] = useState(transactions[0].id)
+  const [direction, setDirection] = useState<"up" | "down">("down")
+  const [paginationStart, setPaginationStart] = useState(0)
+  const [paginationEnd, setPaginationEnd] = useState(ROW_COUNT)
+  const [lastInput, setLastInput] = useState<"keyboard" | "mouse">()
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  const [paletteMode, setPaletteMode] = useState<"menu" | "rename">("menu")
+  const [paletteTransaction, setPaletteTransaction] =
+    useState<Transaction | null>(null)
+  const [, startRenameTransition] = useTransition()
+  const [optimisticTransactions, applyOptimisticRename] = useOptimistic(
+    transactions,
+    (state, { id, name }: { id: string; name: string }) =>
+      state.map((transaction) =>
+        transaction.id === id ? { ...transaction, name } : transaction
+      )
+  )
+  const liRefs = useRef<Record<string, HTMLElement>>({})
+
+  // Environment
+  const hasMounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  )
+  const isServer = typeof window === "undefined"
+  const shouldReduceMotion = useReducedMotion()
+
+  // Derived values
+  const sorted = [...optimisticTransactions].sort(
+    (a, b) => b.date.getTime() - a.date.getTime()
+  )
+  const globalIndex = sorted.findIndex((t) => t.id === activeId)
+  const visibleIndex = globalIndex === -1 ? 0 : globalIndex - paginationStart
+  const highlightStyles: CSSProperties = {
+    transform: `translateY(${visibleIndex * ROW_HEIGHT}px)`,
+    height: `${ROW_HEIGHT}px`
+  }
+  const variants: Variants = {
+    enter: (direction: "up" | "down") => ({
+      opacity: 0,
+      y: direction === "down" ? ROW_HEIGHT : -ROW_HEIGHT
+    }),
+    center: {
+      opacity: 1,
+      y: 0
+    },
+    exit: (direction: "up" | "down") => ({
+      opacity: 0,
+      y: direction === "down" ? -ROW_HEIGHT : ROW_HEIGHT
+    })
+  }
+
+  // Track whether the last interaction was keyboard or mouse
+  useEffect(() => {
+    function handleKey() {
+      setLastInput("keyboard")
+    }
+    function handlePointerMove() {
+      setLastInput("mouse")
+    }
+    window.addEventListener("keydown", handleKey, { passive: true })
+    window.addEventListener("pointermove", handlePointerMove, { passive: true })
+    return () => {
+      window.removeEventListener("keydown", handleKey)
+      window.removeEventListener("pointermove", handlePointerMove)
+    }
+  }, [])
+
+  // Handlers
   function handleSelect(transaction: Transaction) {
     console.log(`Selected ${transaction.name}`)
   }
+  function openPalette(transaction: Transaction, mode: "menu" | "rename") {
+    setPaletteTransaction(transaction)
+    setPaletteMode(mode)
+    setPaletteOpen(true)
+  }
   function handleSlash(transaction: Transaction) {
-    console.log(`Toggled slash for ${transaction.name}`)
+    openPalette(transaction, "menu")
+  }
+  function handleRenameKey(transaction: Transaction) {
+    openPalette(transaction, "rename")
+  }
+  function handleRename(newName: string) {
+    const target = paletteTransaction
+    if (!target) return
+    startRenameTransition(async () => {
+      applyOptimisticRename({ id: target.id, name: newName })
+      await renameTransactionServerAction(target.id, newName)
+    })
   }
   function handleClick(
     event: MouseEvent<HTMLLIElement>,
@@ -55,8 +149,8 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
     if (event.key === "j") {
       event.preventDefault()
       setDirection("down")
-      const currentIndex = transactions.indexOf(transaction)
-      const nextTransaction = transactions[currentIndex + 1]
+      const currentIndex = optimisticTransactions.indexOf(transaction)
+      const nextTransaction = optimisticTransactions[currentIndex + 1]
       if (!nextTransaction) return
       setActiveId(nextTransaction.id)
       liRefs.current[nextTransaction.id]?.focus({
@@ -66,8 +160,8 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
     if (event.key === "k") {
       event.preventDefault()
       setDirection("up")
-      const currentIndex = transactions.indexOf(transaction)
-      const previousTransaction = transactions[currentIndex - 1]
+      const currentIndex = optimisticTransactions.indexOf(transaction)
+      const previousTransaction = optimisticTransactions[currentIndex - 1]
       if (!previousTransaction) return
       setActiveId(previousTransaction.id)
       liRefs.current[previousTransaction.id]?.focus({
@@ -82,228 +176,199 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
       event.preventDefault()
       handleSlash(transaction)
     }
-  }
-
-  const ROW_HEIGHT = 38
-  const CHEVRON_DIMENSIONS = 24
-  const [activeId, setActiveId] = useState(transactions[0].id)
-  const liRefs = useRef<Record<string, HTMLElement>>({})
-  const hasMounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  )
-  const isServer = typeof window === "undefined"
-  const shouldReduceMotion = useReducedMotion()
-  const variants: Variants = {
-    enter: (direction: "up" | "down") => ({
-      opacity: 0,
-      y: direction === "down" ? ROW_HEIGHT : -ROW_HEIGHT
-    }),
-    center: {
-      opacity: 1,
-      y: 0
-    },
-    exit: (direction: "up" | "down") => ({
-      opacity: 0,
-      y: direction === "down" ? -ROW_HEIGHT : ROW_HEIGHT
-    })
-  }
-
-  const ROW_COUNT = 11
-  const PAGINATE_UP_THRESHOLD = 2
-  const PAGINATE_DOWN_THRESHOLD = 8
-  const [paginationStart, setPaginationStart] = useState(0)
-  const [paginationEnd, setPaginationEnd] = useState(ROW_COUNT)
-  const [direction, setDirection] = useState<"up" | "down">("down")
-
-  const sorted = [...transactions].sort(
-    (a, b) => b.date.getTime() - a.date.getTime()
-  )
-  const globalIndex = sorted.findIndex((t) => t.id === activeId)
-  const visibleIndex = globalIndex === -1 ? 0 : globalIndex - paginationStart
-  const highlightStyles: CSSProperties = {
-    transform: `translateY(${visibleIndex * ROW_HEIGHT}px)`,
-    height: `${ROW_HEIGHT}px`
-  }
-  const [lastInput, setLastInput] = useState<"keyboard" | "mouse">()
-  useEffect(() => {
-    function handleKey() {
-      setLastInput("keyboard")
+    if (event.key === "r") {
+      event.preventDefault()
+      handleRenameKey(transaction)
     }
-    function handlePointerMove() {
-      setLastInput("mouse")
-    }
-    window.addEventListener("keydown", handleKey, { passive: true })
-    window.addEventListener("pointermove", handlePointerMove, { passive: true })
-    return () => {
-      window.removeEventListener("keydown", handleKey)
-      window.removeEventListener("pointermove", handlePointerMove)
-    }
-  }, [])
+  }
 
   return (
-    <RovingFocusGroup orientation="vertical" style={{ position: "relative" }}>
-      <div
-        className={styles.progressiveBlurContainer}
-        style={{
-          opacity: paginationStart > 0 ? 1 : 0,
-          height: ROW_HEIGHT * 4,
-          top: 0,
-          marginTop: -ROW_HEIGHT
-        }}
-      >
+    <>
+      <RovingFocusGroup orientation="vertical" style={{ position: "relative" }}>
         <div
-          className={styles.blurFilter}
+          className={styles.progressiveBlurContainer}
           style={{
-            background: "linear-gradient(var(--color-background), transparent)",
-            mask: "linear-gradient(var(--color-background) 0%, transparent 100%)"
+            opacity: paginationStart > 0 ? 1 : 0,
+            height: ROW_HEIGHT * 4,
+            top: 0,
+            marginTop: -ROW_HEIGHT
           }}
-        />
-      </div>
-      <div
-        className={`${styles.chevron} ${styles.top}`}
-        style={{
-          opacity: paginationStart > 0 ? 0.4 : 0,
-          width: CHEVRON_DIMENSIONS,
-          height: CHEVRON_DIMENSIONS
-        }}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-          <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M11.4697 9.46967C11.7626 9.17678 12.2374 9.17678 12.5303 9.46967L16.5303 13.4697C16.8232 13.7626 16.8232 14.2374 16.5303 14.5303C16.2374 14.8232 15.7626 14.8232 15.4697 14.5303L12 11.0607L8.53033 14.5303C8.23744 14.8232 7.76256 14.8232 7.46967 14.5303C7.17678 14.2374 7.17678 13.7626 7.46967 13.4697L11.4697 9.46967Z"
+        >
+          <div
+            className={styles.blurFilter}
+            style={{
+              background:
+                "linear-gradient(var(--color-background), transparent)",
+              mask: "linear-gradient(var(--color-background) 0%, transparent 100%)"
+            }}
           />
-        </svg>
-      </div>
-      <ol className={styles.list} role="listbox" aria-label="Transaction Inbox">
-        <div className={styles.highlight} style={highlightStyles} />
-        <AnimatePresence mode="popLayout">
-          {transactions
-            .sort((a, b) => b.date.getTime() - a.date.getTime())
-            .slice(paginationStart, paginationEnd)
-            .map((transaction, index) => (
-              <RovingFocusGroupItem
-                key={transaction.id}
-                asChild
-                focusable
-                autoFocus={index === 0}
-                onFocus={() => {
-                  setActiveId(transaction.id)
-
-                  if (lastInput !== "keyboard") return
-
-                  // Go down when towards the bottom of the list
-                  if (
-                    index >= PAGINATE_DOWN_THRESHOLD &&
-                    paginationEnd !== transactions.length
-                  ) {
-                    setPaginationStart((prev) => prev + 1)
-                    setPaginationEnd((prev) => prev + 1)
-                  }
-
-                  // Go up when towards the top of the list
-                  if (index <= PAGINATE_UP_THRESHOLD && paginationStart !== 0) {
-                    setPaginationStart((prev) => prev - 1)
-                    setPaginationEnd((prev) => prev - 1)
-                  }
-                }}
-              >
-                <motion.li
-                  className={styles.item}
-                  onKeyDown={(e) => handleKeyDown(e, transaction)}
-                  onClick={(e) => handleClick(e, transaction)}
-                  onMouseEnter={() => {
-                    if (lastInput !== "mouse") return
+        </div>
+        <div
+          className={`${styles.chevron} ${styles.top}`}
+          style={{
+            opacity: paginationStart > 0 ? 0.4 : 0,
+            width: CHEVRON_DIMENSIONS,
+            height: CHEVRON_DIMENSIONS
+          }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <path
+              fillRule="evenodd"
+              clipRule="evenodd"
+              d="M11.4697 9.46967C11.7626 9.17678 12.2374 9.17678 12.5303 9.46967L16.5303 13.4697C16.8232 13.7626 16.8232 14.2374 16.5303 14.5303C16.2374 14.8232 15.7626 14.8232 15.4697 14.5303L12 11.0607L8.53033 14.5303C8.23744 14.8232 7.76256 14.8232 7.46967 14.5303C7.17678 14.2374 7.17678 13.7626 7.46967 13.4697L11.4697 9.46967Z"
+            />
+          </svg>
+        </div>
+        <ol
+          className={styles.list}
+          role="listbox"
+          aria-label="Transaction Inbox"
+        >
+          <div className={styles.highlight} style={highlightStyles} />
+          <AnimatePresence mode="popLayout">
+            {sorted
+              .slice(paginationStart, paginationEnd)
+              .map((transaction, index) => (
+                <RovingFocusGroupItem
+                  key={transaction.id}
+                  asChild
+                  focusable
+                  autoFocus={index === 0}
+                  onFocus={() => {
                     setActiveId(transaction.id)
-                    liRefs.current[transaction.id]?.focus({
-                      preventScroll: true
-                    })
-                  }}
-                  role="option"
-                  aria-selected={activeId === transaction.id}
-                  ref={(li) => {
-                    if (li) liRefs.current[transaction.id] = li
-                    else delete liRefs.current[transaction.id]
-                  }}
-                  layout
-                  custom={direction}
-                  variants={variants}
-                  initial={
-                    isServer
-                      ? undefined
-                      : hasMounted
-                        ? shouldReduceMotion
-                          ? false
-                          : "enter"
-                        : undefined
-                  }
-                  animate={!shouldReduceMotion ? "center" : {}}
-                  exit={!shouldReduceMotion ? "exit" : {}}
-                  transition={
-                    !shouldReduceMotion ? { duration: 0.15 } : { duration: 0 }
-                  }
-                  style={{
-                    minHeight: ROW_HEIGHT
+
+                    if (lastInput !== "keyboard") return
+
+                    // Go down when towards the bottom of the list
+                    if (
+                      index >= PAGINATE_DOWN_THRESHOLD &&
+                      paginationEnd !== optimisticTransactions.length
+                    ) {
+                      setPaginationStart((prev) => prev + 1)
+                      setPaginationEnd((prev) => prev + 1)
+                    }
+
+                    // Go up when towards the top of the list
+                    if (
+                      index <= PAGINATE_UP_THRESHOLD &&
+                      paginationStart !== 0
+                    ) {
+                      setPaginationStart((prev) => prev - 1)
+                      setPaginationEnd((prev) => prev - 1)
+                    }
                   }}
                 >
-                  <span className={styles.date}>
-                    {Intl.DateTimeFormat("en-US", {
-                      month: "2-digit",
-                      day: "2-digit",
-                      year:
-                        transaction.date.getFullYear() !==
-                        new Date().getFullYear()
-                          ? "numeric"
+                  <motion.li
+                    className={styles.item}
+                    onKeyDown={(e) => handleKeyDown(e, transaction)}
+                    onClick={(e) => handleClick(e, transaction)}
+                    onMouseEnter={() => {
+                      if (lastInput !== "mouse") return
+                      setActiveId(transaction.id)
+                      liRefs.current[transaction.id]?.focus({
+                        preventScroll: true
+                      })
+                    }}
+                    role="option"
+                    aria-selected={activeId === transaction.id}
+                    ref={(li) => {
+                      if (li) liRefs.current[transaction.id] = li
+                      else delete liRefs.current[transaction.id]
+                    }}
+                    layout
+                    custom={direction}
+                    variants={variants}
+                    initial={
+                      isServer
+                        ? undefined
+                        : hasMounted
+                          ? shouldReduceMotion
+                            ? false
+                            : "enter"
                           : undefined
-                    }).format(transaction.date)}
-                  </span>
-                  <span className={styles.name}>{transaction.name}</span>
-                  <span className={styles.amount}>
-                    {Intl.NumberFormat("en-US", {
-                      style: "currency",
-                      currency: transaction.currencyCode
-                    }).format(transaction.amount)}
-                  </span>
-                </motion.li>
-              </RovingFocusGroupItem>
-            ))}
-        </AnimatePresence>
-      </ol>
-      <div
-        className={styles.progressiveBlurContainer}
-        style={{
-          opacity: paginationEnd < transactions.length ? 1 : 0,
-          height: ROW_HEIGHT * 4,
-          bottom: 0,
-          marginBottom: -ROW_HEIGHT
-        }}
-      >
+                    }
+                    animate={!shouldReduceMotion ? "center" : {}}
+                    exit={!shouldReduceMotion ? "exit" : {}}
+                    transition={
+                      !shouldReduceMotion ? { duration: 0.15 } : { duration: 0 }
+                    }
+                    style={{
+                      minHeight: ROW_HEIGHT
+                    }}
+                  >
+                    <span className={styles.date}>
+                      {Intl.DateTimeFormat("en-US", {
+                        month: "2-digit",
+                        day: "2-digit",
+                        year:
+                          transaction.date.getFullYear() !==
+                          new Date().getFullYear()
+                            ? "numeric"
+                            : undefined
+                      }).format(transaction.date)}
+                    </span>
+                    <span className={styles.name}>{transaction.name}</span>
+                    <span className={styles.amount}>
+                      {Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: transaction.currencyCode
+                      }).format(transaction.amount)}
+                    </span>
+                  </motion.li>
+                </RovingFocusGroupItem>
+              ))}
+          </AnimatePresence>
+        </ol>
         <div
-          className={styles.blurFilter}
+          className={styles.progressiveBlurContainer}
           style={{
-            background: "linear-gradient(transparent, var(--color-background))",
-            mask: "linear-gradient(transparent 0%, var(--color-background) 100%)"
+            opacity: paginationEnd < optimisticTransactions.length ? 1 : 0,
+            height: ROW_HEIGHT * 4,
+            bottom: 0,
+            marginBottom: -ROW_HEIGHT
           }}
-        />
-      </div>
-      <div
-        className={`${styles.chevron} ${styles.bottom}`}
-        style={{
-          width: CHEVRON_DIMENSIONS,
-          height: CHEVRON_DIMENSIONS,
-          opacity: paginationEnd < transactions.length ? 0.4 : 0
-        }}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-          <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M11.4697 14.5303C11.7626 14.8232 12.2374 14.8232 12.5303 14.5303L16.5303 10.5303C16.8232 10.2374 16.8232 9.76256 16.5303 9.46967C16.2374 9.17678 15.7626 9.17678 15.4697 9.46967L12 12.9393L8.53033 9.46967C8.23744 9.17678 7.76256 9.17678 7.46967 9.46967C7.17678 9.76256 7.17678 10.2374 7.46967 10.5303L11.4697 14.5303Z"
+        >
+          <div
+            className={styles.blurFilter}
+            style={{
+              background:
+                "linear-gradient(transparent, var(--color-background))",
+              mask: "linear-gradient(transparent 0%, var(--color-background) 100%)"
+            }}
           />
-        </svg>
-      </div>
-    </RovingFocusGroup>
+        </div>
+        <div
+          className={`${styles.chevron} ${styles.bottom}`}
+          style={{
+            width: CHEVRON_DIMENSIONS,
+            height: CHEVRON_DIMENSIONS,
+            opacity: paginationEnd < optimisticTransactions.length ? 0.4 : 0
+          }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <path
+              fillRule="evenodd"
+              clipRule="evenodd"
+              d="M11.4697 14.5303C11.7626 14.8232 12.2374 14.8232 12.5303 14.5303L16.5303 10.5303C16.8232 10.2374 16.8232 9.76256 16.5303 9.46967C16.2374 9.17678 15.7626 9.17678 15.4697 9.46967L12 12.9393L8.53033 9.46967C8.23744 9.17678 7.76256 9.17678 7.46967 9.46967C7.17678 9.76256 7.17678 10.2374 7.46967 10.5303L11.4697 14.5303Z"
+            />
+          </svg>
+        </div>
+      </RovingFocusGroup>
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        transaction={paletteTransaction}
+        onRename={handleRename}
+        initialMode={paletteMode}
+      />
+    </>
   )
 }

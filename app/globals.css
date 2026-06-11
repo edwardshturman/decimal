@@ -12,6 +12,7 @@
   --color-foreground: var(--color-black);
   --color-accent-text: var(--color-dark-blue-70);
   --color-link: var(--color-accent);
+  --color-background-overlay: hsla(210deg, 050%, 030%, 0.2);
 
   --font-sans: var(--font-ia-writer-quattro), ui-sans-serif, sans-serif;
   --font-mono: var(--font-ia-writer-mono), ui-monospace, monospace;
