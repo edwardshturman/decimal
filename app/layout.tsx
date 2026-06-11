@@ -82,13 +82,15 @@ export default function RootLayout({
       lang="en"
       className={`${iAWriterQuattro.variable} ${iAWriterMono.variable}`}
     >
-      <body className={styles.page}>
-        <header className={styles.header}>
-          <SignInOutWrapper />
-          <BackToInbox />
-        </header>
-        {children}
-        {shouldInjectToolbar && <VercelToolbar />}
+      <body>
+        <div className={styles.page}>
+          <header className={styles.header}>
+            <SignInOutWrapper />
+            <BackToInbox />
+          </header>
+          {children}
+          {shouldInjectToolbar && <VercelToolbar />}
+        </div>
       </body>
     </html>
   )
