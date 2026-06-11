@@ -5,17 +5,29 @@ import {
   RovingFocusGroup,
   RovingFocusGroupItem
 } from "@radix-ui/react-roving-focus"
+import { CommandPalette } from "@/components/CommandPalette"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
 // Hooks
-import { useEffect, useRef, useState, useSyncExternalStore } from "react"
+import {
+  useEffect,
+  useOptimistic,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  useTransition
+} from "react"
 
 // Types
 import type { Variants } from "motion/react"
+import { Transaction } from "@/generated/prisma/client"
 import type { CSSProperties, KeyboardEvent, MouseEvent } from "react"
 
+// Server Actions
+import { renameTransactionServerAction } from "@/functions/actions"
+
+// Styles
 import styles from "./Inbox.module.css"
-import { Transaction } from "@/generated/prisma/client"
 
 export function Inbox({ transactions }: { transactions: Transaction[] }) {
   function handleSelect(transaction: Transaction) {
