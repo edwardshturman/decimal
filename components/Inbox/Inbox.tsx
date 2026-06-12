@@ -140,11 +140,26 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
     event: KeyboardEvent<HTMLLIElement>,
     transaction: Transaction
   ) {
+    if (
+      event.key === "/" ||
+      (event.metaKey && event.key.toLowerCase() === "k")
+    ) {
+      event.preventDefault()
+      handleSlash(transaction)
+      return
+    }
+    if (event.key === "r") {
+      event.preventDefault()
+      handleRenameKey(transaction)
+      return
+    }
     if (event.key === "ArrowDown") {
       setDirection("down")
+      return
     }
     if (event.key === "ArrowUp") {
       setDirection("up")
+      return
     }
     if (event.key === "j") {
       event.preventDefault()
@@ -156,6 +171,7 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
       liRefs.current[nextTransaction.id]?.focus({
         preventScroll: true
       })
+      return
     }
     if (event.key === "k") {
       event.preventDefault()
@@ -167,18 +183,12 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
       liRefs.current[previousTransaction.id]?.focus({
         preventScroll: true
       })
+      return
     }
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault()
       handleSelect(transaction)
-    }
-    if (event.key === "/") {
-      event.preventDefault()
-      handleSlash(transaction)
-    }
-    if (event.key === "r") {
-      event.preventDefault()
-      handleRenameKey(transaction)
+      return
     }
   }
 
