@@ -24,6 +24,19 @@
   font-family: var(--font-mono);
 }
 
+.title {
+  padding: 16px;
+  border-bottom: 1px solid var(--color-accent-10);
+  font-size: 1rem;
+  font-weight: normal;
+  color: var(--color-foreground);
+}
+
+.titleContext,
+.titleSeparator {
+  color: var(--color-accent-text);
+}
+
 .input {
   width: 100%;
   padding: 16px;

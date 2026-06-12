@@ -64,13 +64,23 @@ export function CommandPalette({
             }
           }}
         >
-          <Dialog.Title className={styles.visuallyHidden}>
-            Transaction actions
-          </Dialog.Title>
           <Dialog.Description className={styles.visuallyHidden}>
             Choose an action for this transaction.
           </Dialog.Description>
           <Command className={styles.command} label="Transaction actions">
+            <Dialog.Title className={styles.title}>
+              {mode === "menu" ? (
+                transaction?.name
+              ) : (
+                <>
+                  <span className={styles.titleContext}>
+                    {transaction?.name}
+                  </span>
+                  <span className={styles.titleSeparator}> › </span>
+                  Rename
+                </>
+              )}
+            </Dialog.Title>
             {mode === "menu" ? (
               <>
                 <Command.Input
