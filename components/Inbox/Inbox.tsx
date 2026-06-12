@@ -148,7 +148,12 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
       handleSlash(transaction)
       return
     }
-    if (event.key === "r") {
+    if (
+      event.key === "r" &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.altKey
+    ) {
       event.preventDefault()
       handleRenameKey(transaction)
       return
