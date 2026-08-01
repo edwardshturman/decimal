@@ -1,0 +1,48 @@
+div.container {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 24px;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+div.bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 24px;
+  padding: 8px 8px 8px 16px;
+  border-radius: 12px;
+  background-color: var(--color-accent-10);
+  backdrop-filter: blur(32px);
+  box-shadow: 0 16px 48px var(--shadow-tinted);
+  pointer-events: auto;
+
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+}
+
+span.count {
+  color: var(--color-accent-text);
+  white-space: nowrap;
+}
+
+div.actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+kbd.shortcut {
+  margin-left: 8px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: var(--color-accent-10);
+  color: var(--color-accent-text);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
