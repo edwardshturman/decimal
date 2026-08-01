@@ -36,6 +36,11 @@ li.item:focus {
   outline: none;
 }
 
+li.item.selected {
+  border-radius: 6px;
+  background-color: var(--color-accent-10);
+}
+
 div.highlight {
   position: absolute;
   left: 0;
