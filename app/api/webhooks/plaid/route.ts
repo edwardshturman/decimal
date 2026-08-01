@@ -1,6 +1,5 @@
-import { getItemFromDb } from "@/functions/db/items"
-import { syncTransactions } from "@/functions/plaid"
-import { decryptAccessToken } from "@/functions/crypto/utils"
+import { syncItem } from "@/functions/items"
+import { getItemFromDb, setItemPlaidErrorCodeInDb } from "@/functions/db/items"
 
 export async function POST(request: Request) {
   const body = await request.json()
