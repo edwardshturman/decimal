@@ -96,7 +96,8 @@ export function CommandPalette({
                     className={styles.item}
                     onSelect={() => setMode("rename")}
                   >
-                    Rename
+                    <span>Rename</span>
+                    <kbd className={styles.shortcut}>R</kbd>
                   </Command.Item>
                 </Command.List>
               </>

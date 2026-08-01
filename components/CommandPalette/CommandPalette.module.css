@@ -62,6 +62,9 @@
 }
 
 .item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 8px 12px;
   border-radius: 6px;
   color: var(--color-foreground);
@@ -71,6 +74,15 @@
 
 .item[data-selected="true"] {
   background: var(--color-accent-10);
+}
+
+.shortcut {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--color-accent-10);
+  color: var(--color-accent-text);
+  font-family: inherit;
+  font-size: 0.75rem;
 }
 
 .visuallyHidden {
