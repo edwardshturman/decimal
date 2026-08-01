@@ -4,26 +4,47 @@ import { decryptAccessToken } from "@/functions/crypto/utils"
 
 export async function POST(request: Request) {
   const body = await request.json()
-  const { webhook_type, webhook_code, item_id } = body
+  const { webhook_type, webhook_code, item_id, error } = body
+
+  // Not every webhook is about an Item, e.g. those for a Link session
+  if (!item_id) return Response.json({ ok: true })
+
+  const item = await getItemFromDb({ itemId: item_id })
+  if (!item) {
+    return Response.json({ error: "Item not found" }, { status: 404 })
+  }
 
   if (
     webhook_type === "TRANSACTIONS" &&
     webhook_code === "SYNC_UPDATES_AVAILABLE"
   ) {
-    const item = await getItemFromDb({ itemId: item_id })
-    if (!item) {
-      return Response.json({ error: "Item not found" }, { status: 404 })
+    await syncItem(item)
+  }
+
+  // Plaid reports the health of an Item out of band, ahead of any call we make failing
+  // https://plaid.com/docs/api/items/#item-webhooks
+  if (webhook_type === "ITEM") {
+    switch (webhook_code) {
+      case "ERROR":
+        await setItemPlaidErrorCodeInDb({
+          itemId: item.id,
+          plaidErrorCode: error?.error_code ?? "ITEM_LOGIN_REQUIRED"
+        })
+        break
+      case "PENDING_DISCONNECT":
+      case "PENDING_EXPIRATION":
+        await setItemPlaidErrorCodeInDb({
+          itemId: item.id,
+          plaidErrorCode: webhook_code
+        })
+        break
+      case "LOGIN_REPAIRED":
+        await setItemPlaidErrorCodeInDb({
+          itemId: item.id,
+          plaidErrorCode: null
+        })
+        break
     }
-
-    const encryptionKey = process.env.KEY_IN_USE!
-    const keyVersion = item.encryptionKeyVersion
-    const { plainText: accessToken } = decryptAccessToken(
-      item.accessToken,
-      encryptionKey,
-      keyVersion
-    )
-
-    await syncTransactions(accessToken)
   }
 
   return Response.json({ ok: true })

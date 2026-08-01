@@ -22,6 +22,7 @@ model Item {
   accessToken          String
   encryptionKeyVersion String
   institutionId        String    @default("")
+  plaidErrorCode       String?
   accounts             Account[] @relation("ItemAccounts")
   userId               String
   user                 User      @relation("UserItems", fields: [userId], references: [id])

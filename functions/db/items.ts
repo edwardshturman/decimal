@@ -88,6 +88,26 @@ export async function createItemInDb(itemInput: CreateItemInput) {
 }
 
 /**
+ * Records the Plaid error an Item is currently in, e.g. `ITEM_LOGIN_REQUIRED`, so it can be surfaced to the user for re-authentication.
+ *
+ * @param itemId the ID of the Item to update
+ * @param plaidErrorCode the Plaid `error_code`, or `null` to mark the Item healthy again
+ * @returns the updated Item object
+ */
+export async function setItemPlaidErrorCodeInDb({
+  itemId,
+  plaidErrorCode
+}: {
+  itemId: string
+  plaidErrorCode: string | null
+}) {
+  return await prisma.item.update({
+    where: { id: itemId },
+    data: { plaidErrorCode }
+  })
+}
+
+/**
  * Deletes an Item from the database, including all associated Accounts and Transactions.
  * Does NOT remove the Item from Plaid!
  *

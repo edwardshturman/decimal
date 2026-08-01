@@ -1,8 +1,6 @@
 import prisma from "@/functions/db"
 import { getItemsFromDb } from "@/functions/db/items"
-import { getAccountsFromPlaid } from "@/functions/plaid"
 import { getAccountsFromDb } from "@/functions/db/accounts"
-import { decryptAccessToken } from "@/functions/crypto/utils"
 import type { Account, Transaction } from "@/generated/prisma/client"
 
 export async function getTransactionsFromDb({
@@ -108,27 +106,16 @@ export async function getAccountsAndTransactionsFromDb({
   const accounts: Account[] = []
   const transactions: Transaction[] = []
   const userItems = await getItemsFromDb({ userId })
-  const encryptionKey = process.env.KEY_IN_USE!
-  const keyVersion = process.env.KEY_VERSION!
   for (const item of userItems) {
-    const encryptedAccessToken = item.accessToken
-    const { plainText: accessToken } = decryptAccessToken(
-      encryptedAccessToken,
-      encryptionKey,
-      keyVersion
-    )
-
     // Add accounts for the given Item to user's available accounts for filtering
     const itemAccounts = await getAccountsFromDb({ itemId: item.id })
     accounts.push(...itemAccounts)
 
     // Aggregate transactions across Item accounts for rendering
-    const { accounts: accountsFromItem } = await getAccountsFromPlaid({
-      accessToken
-    })
-    for (const account of accountsFromItem) {
+    // Transactions are only ever stored against Accounts we have in the database, so these are read from there rather than from Plaid — rendering the inbox shouldn't depend on a live call, nor on every Item being in a healthy state
+    for (const account of itemAccounts) {
       const accountTransactions = await getTransactionsFromDb({
-        accountId: account.account_id
+        accountId: account.id
       })
 
       // Resolve the user's overrides (e.g. a rename) into the displayed fields, keeping the Plaid-sourced values as the fallback
