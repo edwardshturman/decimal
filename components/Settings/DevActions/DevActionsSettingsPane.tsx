@@ -1,6 +1,9 @@
 // Functions
 import { getOrCreateCurrentUser } from "@/lib/auth"
-import { fireTestWebhookServerAction } from "@/functions/actions"
+import {
+  fireTestWebhookServerAction,
+  resetItemLoginServerAction
+} from "@/functions/actions"
 
 // Components
 import { Button } from "@/components/Button"
@@ -23,6 +26,13 @@ export async function DevActionsSettingsPane() {
       >
         <input hidden readOnly name="userId" value={user.id ?? ""} />
         <Button type="submit">Fire test webhook</Button>
+      </form>
+      <form
+        className={styles["reset-login"]}
+        action={resetItemLoginServerAction}
+      >
+        <input hidden readOnly name="userId" value={user.id ?? ""} />
+        <Button type="submit">Expire bank logins</Button>
       </form>
     </SettingsPane>
   )

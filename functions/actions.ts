@@ -2,17 +2,21 @@
 
 // Functions
 import {
+  describePlaidError,
   exchangePublicTokenForAccessToken,
   fireTestWebhook,
   getAccountsFromPlaid,
+  getPlaidError,
   removeItemFromPlaid,
-  syncTransactions
+  requiresReauthentication,
+  resetSandboxItemLogin
 } from "@/functions/plaid"
 import {
   checkForRedundantItem,
   createItemInDb,
   getItemFromDb,
-  getItemsFromDb
+  getItemsFromDb,
+  setItemPlaidErrorCodeInDb
 } from "@/functions/db/items"
 import {
   createAccountInDb,
@@ -26,6 +30,7 @@ import {
 } from "@/functions/crypto/utils"
 import { after } from "next/server"
 import { revalidatePath } from "next/cache"
+import { syncItem } from "@/functions/items"
 import { getOrCreateCurrentUser } from "@/lib/auth"
 import { getTransactionFromDb } from "@/functions/db/transactions"
 import { upsertTransactionOverrideSetInDb } from "@/functions/db/transactionOverrideSets"
@@ -95,16 +100,36 @@ export async function deleteAccountServerAction(formData: FormData) {
 export async function syncTransactionsServerAction(userId: string) {
   after(async () => {
     const userItems = await getItemsFromDb({ userId })
-    const encryptionKey = process.env.KEY_IN_USE!
-    const keyVersion = process.env.KEY_VERSION!
+    let anyItemErrored = false
     for (const item of userItems) {
-      const { plainText: accessToken } = decryptAccessToken(
-        item.accessToken,
-        encryptionKey,
-        keyVersion
-      )
-      await syncTransactions(accessToken)
+      const plaidErrorCode = await syncItem(item)
+      if (plaidErrorCode) anyItemErrored = true
     }
+    revalidatePath("/inbox")
+    // Surface (or clear) the reconnection prompt for any Item whose state changed
+    if (anyItemErrored || userItems.some((item) => item.plaidErrorCode)) {
+      revalidatePath("/settings")
+    }
+  })
+}
+
+/**
+ * Finishes an update mode Link flow. The Item's access token is unchanged, so all that's left is to clear the recorded error and pick up the transactions missed while the Item was down.
+ *
+ * @param itemId the ID of the repaired Item
+ */
+export async function completeItemUpdateServerAction(itemId: string) {
+  const user = await getOrCreateCurrentUser()
+
+  const item = await getItemFromDb({ itemId })
+  if (!item) return
+  if (item.userId !== user.id) return
+
+  await setItemPlaidErrorCodeInDb({ itemId, plaidErrorCode: null })
+  revalidatePath("/settings")
+
+  after(async () => {
+    await syncItem({ ...item, plaidErrorCode: null })
     revalidatePath("/inbox")
   })
 }
@@ -151,4 +176,44 @@ export async function fireTestWebhookServerAction(formData: FormData) {
   ).plainText
 
   await fireTestWebhook({ accessToken: firstAccessToken })
+}
+
+/**
+ * Expires the login on every Item a user has, so the update mode flow can be exercised on demand.
+ * Sandbox only.
+ */
+export async function resetItemLoginServerAction(formData: FormData) {
+  const rawFormData = { userId: formData.get("userId")?.toString() }
+  const { userId } = rawFormData
+  if (!userId) return
+
+  const userItems = await getItemsFromDb({ userId })
+  const encryptionKey = process.env.KEY_IN_USE!
+  for (const item of userItems) {
+    const { plainText: accessToken } = decryptAccessToken(
+      item.accessToken,
+      encryptionKey,
+      item.encryptionKeyVersion
+    )
+    let plaidErrorCode = "ITEM_LOGIN_REQUIRED"
+    try {
+      await resetSandboxItemLogin({ accessToken })
+    } catch (error) {
+      const plaidError = getPlaidError(error)
+      if (!plaidError) throw error
+
+      // Plaid refuses to expire an Item that has already gone bad — which is the state this button exists to produce, so take it as the answer rather than a failure
+      if (!requiresReauthentication(plaidError.error_code)) {
+        console.error(
+          `[Plaid] Could not expire login for Item ${item.id} — ${describePlaidError(plaidError)}`
+        )
+        continue
+      }
+      plaidErrorCode = plaidError.error_code
+    }
+
+    await setItemPlaidErrorCodeInDb({ itemId: item.id, plaidErrorCode })
+  }
+
+  revalidatePath("/settings")
 }

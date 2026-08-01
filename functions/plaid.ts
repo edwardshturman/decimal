@@ -3,6 +3,7 @@ import {
   CountryCode,
   type LinkTokenCreateRequest,
   PlaidApi,
+  type PlaidError,
   PlaidEnvironments,
   Products,
   type RemovedTransaction,
@@ -49,6 +50,72 @@ const configuration = new Configuration({
 
 const client = new PlaidApi(configuration)
 
+/**
+ * Plaid error codes warning that an Item's connection is *about* to lapse, rather than reporting one that already has.
+ * An Item in either state keeps syncing normally until the deadline passes, so a successful sync says nothing about whether the warning still stands — only re-authenticating clears it.
+ *
+ * @see https://plaid.com/docs/errors/item
+ */
+const PENDING_ERROR_CODES = new Set([
+  "PENDING_DISCONNECT",
+  "PENDING_EXPIRATION"
+])
+
+/**
+ * Plaid error codes describing an Item whose connection has gone stale, all of which the user can clear by re-authenticating through Link's update mode.
+ *
+ * Note that Sandbox Items enter `ITEM_LOGIN_REQUIRED` on their own, 30 days after being created.
+ *
+ * @see https://plaid.com/docs/errors/item
+ */
+const REAUTHENTICABLE_ERROR_CODES = new Set([
+  "ITEM_LOGIN_REQUIRED",
+  ...PENDING_ERROR_CODES
+])
+
+export function requiresReauthentication(plaidErrorCode: string | null) {
+  if (!plaidErrorCode) return false
+  return REAUTHENTICABLE_ERROR_CODES.has(plaidErrorCode)
+}
+
+/**
+ * Whether a recorded error code is an advance warning rather than a failure.
+ * A successful sync disproves a failure, but not one of these — see {@link PENDING_ERROR_CODES}.
+ */
+export function warnsOfPendingDisconnection(plaidErrorCode: string | null) {
+  if (!plaidErrorCode) return false
+  return PENDING_ERROR_CODES.has(plaidErrorCode)
+}
+
+/**
+ * Plaid SDK calls reject with an Axios error carrying the {@link PlaidError} as its response body.
+ * The Axios error itself only reports the status code, so anything wanting to know what actually went wrong has to unwrap it.
+ *
+ * @param error an error thrown by a Plaid SDK call
+ * @returns the Plaid error, or `null` if the error did not come from Plaid
+ */
+export function getPlaidError(error: unknown) {
+  const data = (error as { response?: { data?: Partial<PlaidError> } })
+    ?.response?.data
+  if (typeof data?.error_code !== "string") return null
+  return data as PlaidError
+}
+
+/**
+ * @param error an error thrown by a Plaid SDK call
+ * @returns the Plaid `error_code`, e.g. `ITEM_LOGIN_REQUIRED`, or `null` if the error did not come from Plaid
+ */
+export function getPlaidErrorCode(error: unknown) {
+  return getPlaidError(error)?.error_code ?? null
+}
+
+/**
+ * Formats a Plaid error for logging, since the code alone rarely says enough to act on.
+ */
+export function describePlaidError(plaidError: PlaidError) {
+  return `${plaidError.error_code}: ${plaidError.error_message}`
+}
+
 export async function createLinkToken(userId: string) {
   const webhookUrl =
     process.env.WEBHOOK_URL ||
@@ -66,6 +133,39 @@ export async function createLinkToken(userId: string) {
   }
 
   console.log("[Plaid] Creating link token with webhook URL:", webhookUrl)
+  const response = await client.linkTokenCreate(linkTokenConfig)
+  return response.data
+}
+
+/**
+ * Creates a Link token in update mode, used to re-authenticate an existing Item that Plaid has put into an error state, e.g. `ITEM_LOGIN_REQUIRED`.
+ *
+ * Update mode reuses the Item's existing access token, so there is no public token to exchange once Link succeeds.
+ *
+ * @param userId the ID of the user who owns the Item
+ * @param accessToken the decrypted access token of the Item to repair
+ * @see https://plaid.com/docs/link/update-mode
+ */
+export async function createUpdateModeLinkToken({
+  userId,
+  accessToken
+}: {
+  userId: string
+  accessToken: string
+}) {
+  const linkTokenConfig: LinkTokenCreateRequest = {
+    user: {
+      client_user_id: userId
+    },
+    client_name: APP_NAME,
+    country_codes: PLAID_COUNTRY_CODES,
+    language: "en",
+    access_token: accessToken
+    // `products` is intentionally omitted; Plaid rejects it in update mode
+    // `webhook` has no effect in update mode either — the Item keeps the webhook it was created with
+  }
+
+  console.log("[Plaid] Creating update mode link token")
   const response = await client.linkTokenCreate(linkTokenConfig)
   return response.data
 }
@@ -230,4 +330,21 @@ export async function fireTestWebhook({
     JSON.stringify(fireWebhookResponse.data, null, 2)
   )
   return fireWebhookResponse.data
+}
+
+/**
+ * Forces a Sandbox Item into the `ITEM_LOGIN_REQUIRED` state, so the update mode flow can be tested without waiting for the Item to expire on its own.
+ * Sandbox only.
+ *
+ * @see https://plaid.com/docs/api/sandbox/#sandboxitemreset_login
+ */
+export async function resetSandboxItemLogin({
+  accessToken
+}: {
+  accessToken: string
+}) {
+  const response = await client.sandboxItemResetLogin({
+    access_token: accessToken
+  })
+  return response.data
 }

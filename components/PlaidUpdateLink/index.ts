@@ -1,0 +1,1 @@
+export { PlaidUpdateLink } from "./PlaidUpdateLink"
