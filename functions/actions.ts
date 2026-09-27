@@ -22,7 +22,7 @@ import {
   createAccountInDb,
   deleteAccountFromDb,
   getAccountFromDb,
-  matchAccountFromDb
+  matchUserAccountFromDb
 } from "@/functions/db/accounts"
 import {
   decryptAccessToken,
@@ -56,12 +56,18 @@ export async function exchangePublicTokenForAccessTokenServerAction(
     institutionId: item.institution_id || ""
   }
 
-  const isRedundantItem = await checkForRedundantItem(createItemInput)
+  const isRedundantItem = await checkForRedundantItem({
+    userId,
+    institutionId: createItemInput.institutionId,
+    accounts
+  })
   if (isRedundantItem) return await removeItemFromPlaid({ accessToken })
   await createItemInDb(createItemInput)
 
   for (const account of accounts) {
-    const accountExists = await matchAccountFromDb({
+    const accountExists = await matchUserAccountFromDb({
+      userId,
+      institutionId: createItemInput.institutionId,
       name: account.name,
       mask: account.mask
     })
