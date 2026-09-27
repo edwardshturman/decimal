@@ -5,6 +5,7 @@ import {
   RovingFocusGroup,
   RovingFocusGroupItem
 } from "@radix-ui/react-roving-focus"
+import { SelectionBar } from "@/components/SelectionBar"
 import { CommandPalette } from "@/components/CommandPalette"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
@@ -22,6 +23,9 @@ import {
 import type { Variants } from "motion/react"
 import { Transaction } from "@/generated/prisma/client"
 import type { CSSProperties, KeyboardEvent, MouseEvent } from "react"
+
+// Functions
+import { isActionAvailable } from "@/lib/actions"
 
 // Server Actions
 import { renameTransactionServerAction } from "@/functions/actions"
@@ -45,8 +49,10 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
   const [lastInput, setLastInput] = useState<"keyboard" | "mouse">()
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [paletteMode, setPaletteMode] = useState<"menu" | "rename">("menu")
-  const [paletteTransaction, setPaletteTransaction] =
-    useState<Transaction | null>(null)
+  const [paletteTransactions, setPaletteTransactions] = useState<Transaction[]>(
+    []
+  )
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [, startRenameTransition] = useTransition()
   const [optimisticTransactions, applyOptimisticRename] = useOptimistic(
     transactions,
@@ -70,6 +76,7 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
   const sorted = [...optimisticTransactions].sort(
     (a, b) => b.date.getTime() - a.date.getTime()
   )
+  const selectedTransactions = sorted.filter((t) => selectedIds.has(t.id))
   const globalIndex = sorted.findIndex((t) => t.id === activeId)
   const visibleIndex = globalIndex === -1 ? 0 : globalIndex - paginationStart
   const highlightStyles: CSSProperties = {
@@ -111,24 +118,48 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
   function handleSelect(transaction: Transaction) {
     console.log(`Selected ${transaction.name}`)
   }
-  function openPalette(transaction: Transaction, mode: "menu" | "rename") {
-    setPaletteTransaction(transaction)
+  // Resolves which transactions an action should apply to. A non-empty
+  // selection always wins, so `/` and `r` on any row act on the whole selection
+  // rather than the row the user happens to be focused on. With nothing
+  // selected, actions fall back to that focused row, which is how the palette
+  // behaved before selection existed.
+  // The returned length is also what decides an action's availability: one
+  // target admits individual actions, more than one admits group actions.
+  function getActionTargets(focusedTransaction: Transaction) {
+    if (selectedTransactions.length === 0) return [focusedTransaction]
+    return selectedTransactions
+  }
+  function toggleSelection(transaction: Transaction) {
+    setSelectedIds((currentIds) => {
+      const newIds = new Set(currentIds)
+      if (newIds.has(transaction.id)) newIds.delete(transaction.id)
+      else newIds.add(transaction.id)
+      return newIds
+    })
+  }
+  function clearSelection() {
+    setSelectedIds(new Set())
+  }
+  function openPalette(targets: Transaction[], mode: "menu" | "rename") {
+    if (targets.length === 0) return
+    setPaletteTransactions(targets)
     setPaletteMode(mode)
     setPaletteOpen(true)
   }
   function handleSlash(transaction: Transaction) {
-    openPalette(transaction, "menu")
+    openPalette(getActionTargets(transaction), "menu")
   }
   function handleRenameKey(transaction: Transaction) {
-    openPalette(transaction, "rename")
+    openPalette(getActionTargets(transaction), "rename")
   }
   function handleRename(newName: string) {
-    const target = paletteTransaction
+    const target = paletteTransactions[0]
     if (!target) return
     startRenameTransition(async () => {
       applyOptimisticRename({ id: target.id, name: newName })
       await renameTransactionServerAction(target.id, newName)
     })
+    clearSelection()
   }
   function handleClick(
     event: MouseEvent<HTMLLIElement>,
@@ -149,12 +180,30 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
       return
     }
     if (
+      event.key === "x" &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.altKey
+    ) {
+      event.preventDefault()
+      toggleSelection(transaction)
+      return
+    }
+    if (event.key === "Escape" && selectedTransactions.length > 0) {
+      event.preventDefault()
+      clearSelection()
+      return
+    }
+    if (
       event.key === "r" &&
       !event.metaKey &&
       !event.ctrlKey &&
       !event.altKey
     ) {
       event.preventDefault()
+      // Rename is an individual action, so it is unavailable for a group
+      if (!isActionAvailable("rename", getActionTargets(transaction).length))
+        return
       handleRenameKey(transaction)
       return
     }
@@ -242,6 +291,7 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
           className={styles.list}
           role="listbox"
           aria-label="Transaction Inbox"
+          aria-multiselectable
         >
           <div className={styles.highlight} style={highlightStyles} />
           <AnimatePresence mode="popLayout">
@@ -278,7 +328,9 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
                   }}
                 >
                   <motion.li
-                    className={styles.item}
+                    className={`${styles.item} ${
+                      selectedIds.has(transaction.id) ? styles.selected : ""
+                    }`}
                     onKeyDown={(e) => handleKeyDown(e, transaction)}
                     onClick={(e) => handleClick(e, transaction)}
                     onMouseEnter={() => {
@@ -289,7 +341,7 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
                       })
                     }}
                     role="option"
-                    aria-selected={activeId === transaction.id}
+                    aria-selected={selectedIds.has(transaction.id)}
                     ref={(li) => {
                       if (li) liRefs.current[transaction.id] = li
                       else delete liRefs.current[transaction.id]
@@ -377,10 +429,15 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
           </svg>
         </div>
       </RovingFocusGroup>
+      <SelectionBar
+        count={selectedTransactions.length}
+        onOpenPalette={() => openPalette(selectedTransactions, "menu")}
+        onClear={clearSelection}
+      />
       <CommandPalette
         open={paletteOpen}
         onOpenChange={setPaletteOpen}
-        transaction={paletteTransaction}
+        transactions={paletteTransactions}
         onRename={handleRename}
         initialMode={paletteMode}
       />
