@@ -36,9 +36,10 @@ import { getTransactionFromDb } from "@/functions/db/transactions"
 import { upsertTransactionOverrideSetInDb } from "@/functions/db/transactionOverrideSets"
 
 export async function exchangePublicTokenForAccessTokenServerAction(
-  userId: string,
   publicToken: string
 ) {
+  const { id: userId } = await getOrCreateCurrentUser()
+
   const accessToken = await exchangePublicTokenForAccessToken(publicToken)
 
   const { item, accounts } = await getAccountsFromPlaid({ accessToken })
@@ -84,12 +85,10 @@ export async function exchangePublicTokenForAccessTokenServerAction(
 }
 
 export async function deleteAccountServerAction(formData: FormData) {
-  const rawFormData = {
-    userId: formData.get("userId")?.toString(),
-    accountId: formData.get("accountId")?.toString()
-  }
-  const { userId, accountId } = rawFormData
-  if (!userId || !accountId) return
+  const user = await getOrCreateCurrentUser()
+
+  const accountId = formData.get("accountId")?.toString()
+  if (!accountId) return
 
   const account = await getAccountFromDb({ accountId })
   if (!account) return
@@ -97,15 +96,17 @@ export async function deleteAccountServerAction(formData: FormData) {
   const associatedItem = await getItemFromDb({ itemId: account.itemId })
   if (!associatedItem) return
 
-  if (associatedItem.userId !== userId) return
+  if (associatedItem.userId !== user.id) return
 
   await deleteAccountFromDb({ accountId })
   revalidatePath("/settings")
 }
 
-export async function syncTransactionsServerAction(userId: string) {
+export async function syncTransactionsServerAction() {
+  const user = await getOrCreateCurrentUser()
+
   after(async () => {
-    const userItems = await getItemsFromDb({ userId })
+    const userItems = await getItemsFromDb({ userId: user.id })
     let anyItemErrored = false
     for (const item of userItems) {
       const plaidErrorCode = await syncItem(item)
@@ -166,12 +167,10 @@ export async function renameTransactionServerAction(
   revalidatePath("/inbox")
 }
 
-export async function fireTestWebhookServerAction(formData: FormData) {
-  const rawFormData = { userId: formData.get("userId")?.toString() }
-  const { userId } = rawFormData
-  if (!userId) return
+export async function fireTestWebhookServerAction() {
+  const user = await getOrCreateCurrentUser()
 
-  const userItems = await getItemsFromDb({ userId })
+  const userItems = await getItemsFromDb({ userId: user.id })
   const firstAccessTokenEncrypted = userItems[0].accessToken
   const encryptionKey = process.env.KEY_IN_USE!
   const keyVersion = process.env.KEY_VERSION!
@@ -188,12 +187,10 @@ export async function fireTestWebhookServerAction(formData: FormData) {
  * Expires the login on every Item a user has, so the update mode flow can be exercised on demand.
  * Sandbox only.
  */
-export async function resetItemLoginServerAction(formData: FormData) {
-  const rawFormData = { userId: formData.get("userId")?.toString() }
-  const { userId } = rawFormData
-  if (!userId) return
+export async function resetItemLoginServerAction() {
+  const user = await getOrCreateCurrentUser()
 
-  const userItems = await getItemsFromDb({ userId })
+  const userItems = await getItemsFromDb({ userId: user.id })
   const encryptionKey = process.env.KEY_IN_USE!
   for (const item of userItems) {
     const { plainText: accessToken } = decryptAccessToken(
