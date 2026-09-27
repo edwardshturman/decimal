@@ -1,5 +1,4 @@
 // Functions
-import { getOrCreateCurrentUser } from "@/lib/auth"
 import {
   fireTestWebhookServerAction,
   resetItemLoginServerAction
@@ -12,9 +11,7 @@ import { SettingsPane } from "@/components/Settings/Pane"
 // Styles
 import styles from "./DevActionsSettingsPane.module.css"
 
-export async function DevActionsSettingsPane() {
-  const user = await getOrCreateCurrentUser()
-
+export function DevActionsSettingsPane() {
   return (
     <SettingsPane
       title="Dev Actions"
@@ -24,14 +21,12 @@ export async function DevActionsSettingsPane() {
         className={styles["test-webhook"]}
         action={fireTestWebhookServerAction}
       >
-        <input hidden readOnly name="userId" value={user.id ?? ""} />
         <Button type="submit">Fire test webhook</Button>
       </form>
       <form
         className={styles["reset-login"]}
         action={resetItemLoginServerAction}
       >
-        <input hidden readOnly name="userId" value={user.id ?? ""} />
         <Button type="submit">Expire bank logins</Button>
       </form>
     </SettingsPane>

@@ -51,7 +51,6 @@ async function AccountsList({ userId }: { userId: string }) {
             <span className={styles.name}>{account.name}</span>
             <span className={styles.remove}>
               <form action={deleteAccountServerAction}>
-                <input hidden readOnly name="userId" value={userId ?? ""} />
                 <input
                   hidden
                   readOnly
@@ -124,7 +123,7 @@ export async function AccountsSettingsPane() {
       <Suspense>
         <ReconnectPrompts userId={user.id} />
       </Suspense>
-      <PlaidLink linkToken={linkTokenResponse.link_token} userId={user.id} />
+      <PlaidLink linkToken={linkTokenResponse.link_token} />
     </SettingsPane>
   )
 }

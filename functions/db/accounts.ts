@@ -22,22 +22,32 @@ export async function createAccountInDb(accountInput: CreateAccountInput) {
 }
 
 /**
- * Attempts to find an Account in the database by name and mask, as provided by Plaid.
+ * Attempts to find one of a user's Accounts at a given institution by name and mask, as provided by Plaid.
  *
+ * Name and mask are only meaningful within a single user's Items at a single institution — two users (or two banks) can easily share a "Plaid Checking" ending in "0000", so the match must never cross those boundaries.
+ *
+ * @param userId the ID of the user whose Accounts to search
+ * @param institutionId the Plaid institution ID the Account's Item is linked to
  * @param name Account name, e.g. "Discover it Card"
- * @param mask Account mask, e.g. "1234"
+ * @param mask Account mask, e.g. "1234"; `null` matches only Accounts without a mask
  * @returns an Account entry from the database if found, `null` otherwise
  */
-export async function matchAccountFromDb({
+export async function matchUserAccountFromDb({
+  userId,
+  institutionId,
   name,
   mask
 }: {
+  userId: string
+  institutionId: string
   name: string
   mask: string | null
 }) {
   return await prisma.account.findFirst({
     where: {
-      AND: { name, mask }
+      name,
+      mask,
+      item: { userId, institutionId }
     }
   })
 }

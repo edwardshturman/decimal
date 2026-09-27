@@ -12,16 +12,10 @@ import {
   syncTransactionsServerAction
 } from "@/functions/actions"
 
-export function PlaidLink({
-  userId,
-  linkToken
-}: {
-  userId: string
-  linkToken: string
-}) {
+export function PlaidLink({ linkToken }: { linkToken: string }) {
   async function onSuccess(public_token: string) {
-    await exchangePublicTokenForAccessTokenServerAction(userId, public_token)
-    await syncTransactionsServerAction(userId)
+    await exchangePublicTokenForAccessTokenServerAction(public_token)
+    await syncTransactionsServerAction()
   }
 
   const config: PlaidLinkOptions = {

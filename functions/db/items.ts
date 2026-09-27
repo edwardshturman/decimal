@@ -1,7 +1,6 @@
 import prisma from "@/functions/db"
-import { getAccountsFromPlaid } from "@/functions/plaid"
-import { matchAccountFromDb } from "@/functions/db/accounts"
-import { decryptAccessToken } from "@/functions/crypto/utils"
+import type { AccountBase } from "plaid"
+import { matchUserAccountFromDb } from "@/functions/db/accounts"
 
 type CreateItemInput = {
   id: string
@@ -24,34 +23,31 @@ export async function getItemsFromDb({ userId }: { userId: string }) {
 }
 
 /**
- * Matches a given new Item against existing institutions linked across a user's Items.
+ * Matches a given new Item against the Items a user has already linked at the same institution.
  * If all Accounts from the new Item exist in the database already, the new Item is designated as redundant, and is not created in the database.
  * The caller of this function should remove the new Item from Plaid.
  *
- * @param itemInput an object containing information about the new Item, and the user attempting to create it
+ * @param userId the ID of the user attempting to create the new Item
+ * @param institutionId the Plaid institution ID of the new Item
+ * @param accounts the new Item's Accounts, as returned by Plaid
  * @returns `true` if redundant, `false` otherwise
  */
-export async function checkForRedundantItem(itemInput: CreateItemInput) {
-  const encryptionKey = process.env.KEY_IN_USE!
-  const keyVersion = itemInput.encryptionKeyVersion
-
-  const unencryptedAccessToken = decryptAccessToken(
-    itemInput.accessToken,
-    encryptionKey,
-    keyVersion
-  )
-
-  const accountsUserWantsToAdd = (
-    await getAccountsFromPlaid({
-      accessToken: unencryptedAccessToken.plainText
-    })
-  ).accounts
-
-  for (const account of accountsUserWantsToAdd) {
+export async function checkForRedundantItem({
+  userId,
+  institutionId,
+  accounts
+}: {
+  userId: string
+  institutionId: string
+  accounts: AccountBase[]
+}) {
+  for (const account of accounts) {
     console.log(
       `Examining Account user wants to add: ${account.name} ${account.mask}`
     )
-    const accountExistsInDb = await matchAccountFromDb({
+    const accountExistsInDb = await matchUserAccountFromDb({
+      userId,
+      institutionId,
       name: account.name,
       mask: account.mask
     })
@@ -63,7 +59,7 @@ export async function checkForRedundantItem(itemInput: CreateItemInput) {
     }
   }
 
-  console.log(`Redundant Item for institution ${itemInput.institutionId}`)
+  console.log(`Redundant Item for institution ${institutionId}`)
   return true
 }
 
