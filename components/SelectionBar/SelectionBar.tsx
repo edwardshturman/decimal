@@ -36,11 +36,11 @@ export function SelectionBar({
             <div className={styles.actions}>
               <Button onClick={onOpenPalette}>
                 Actions
-                <kbd className={styles.shortcut}>/</kbd>
+                {/*<kbd className={styles.shortcut}>/</kbd>*/}
               </Button>
               <Button onClick={onClear}>
                 Clear
-                <kbd className={styles.shortcut}>Esc</kbd>
+                {/*<kbd className={styles.shortcut}>Esc</kbd>*/}
               </Button>
             </div>
           </motion.div>

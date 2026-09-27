@@ -14,11 +14,9 @@ div.bar {
   flex-direction: row;
   align-items: center;
   gap: 24px;
-  padding: 8px 8px 8px 16px;
-  border-radius: 12px;
-  background-color: var(--color-accent-10);
-  backdrop-filter: blur(32px);
-  box-shadow: 0 16px 48px var(--shadow-tinted);
+  padding: 8px 12px;
+  box-shadow: 1px 1px 0 0 var(--shadow-tinted);
+  border: 1px dashed var(--color-dark-blue-70);
   pointer-events: auto;
 
   font-family: var(--font-mono);
@@ -28,6 +26,7 @@ div.bar {
 span.count {
   color: var(--color-accent-text);
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 div.actions {
@@ -37,11 +36,19 @@ div.actions {
   gap: 8px;
 }
 
+div.actions > button {
+  padding: 4px 8px;
+  border: 1px dashed var(--color-accent);
+  border-radius: 0;
+  background-color: transparent;
+}
+
 kbd.shortcut {
   margin-left: 8px;
   padding: 2px 6px;
   border-radius: 4px;
-  background-color: var(--color-accent-10);
+  /*background-color: var(--color-accent-20);*/
+  /*border: 1px solid var(--color-accent-20);*/
   color: var(--color-accent-text);
   font-family: var(--font-mono);
   font-size: 0.75rem;
