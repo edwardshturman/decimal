@@ -1,7 +1,8 @@
 // Functions
 import {
   fireTestWebhookServerAction,
-  resetItemLoginServerAction
+  resetItemLoginServerAction,
+  resetReviewStatusServerAction
 } from "@/functions/actions"
 
 // Components
@@ -28,6 +29,12 @@ export function DevActionsSettingsPane() {
         action={resetItemLoginServerAction}
       >
         <Button type="submit">Expire bank logins</Button>
+      </form>
+      <form
+        className={styles["reset-reviews"]}
+        action={resetReviewStatusServerAction}
+      >
+        <Button type="submit">Reset review status</Button>
       </form>
     </SettingsPane>
   )

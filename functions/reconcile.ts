@@ -57,3 +57,23 @@ export function planSyncOperations({
 
   return operations
 }
+
+/*
+ * Whether a modification from Plaid should send an already-reviewed transaction back to the Inbox.
+ *
+ * Plaid reports a transaction as modified for changes we don't store or show, like category or merchant enrichment, so only a change to something the user actually reviewed counts: its name, amount, or date.
+ * The name compared is Plaid's, not a rename the user made, which lives in the transaction's overrides and is never touched by a sync.
+ */
+export function modificationRequiresReview({
+  stored,
+  modified
+}: {
+  stored: Transaction
+  modified: Transaction
+}) {
+  return (
+    stored.name !== modified.name ||
+    stored.amount !== modified.amount ||
+    stored.date.getTime() !== modified.date.getTime()
+  )
+}

@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test"
-import { planSyncOperations } from "@/functions/reconcile"
+import {
+  modificationRequiresReview,
+  planSyncOperations
+} from "@/functions/reconcile"
 import type { Transaction } from "@/generated/prisma/client"
 
 function makeTransaction(
@@ -13,6 +16,7 @@ function makeTransaction(
     name: "Coffee",
     pending: false,
     pendingTransactionId: null,
+    reviewedAt: null,
     createdAt: new Date("2026-01-01"),
     updatedAt: new Date("2026-01-01"),
     ...overrides
@@ -116,5 +120,32 @@ describe("planSyncOperations", () => {
     })
 
     expect(operations).toEqual([{ type: "update", transaction: modified }])
+  })
+})
+
+describe("modificationRequiresReview", () => {
+  const stored = makeTransaction({
+    id: "transaction-1",
+    reviewedAt: new Date("2026-01-02")
+  })
+
+  test("a changed name, amount, or date requires review", () => {
+    for (const change of [
+      { name: "Coffee & Pastry" },
+      { amount: 12.5 },
+      { date: new Date("2026-01-03") }
+    ]) {
+      const modified = makeTransaction({ ...stored, ...change })
+      expect(modificationRequiresReview({ stored, modified })).toBe(true)
+    }
+  })
+
+  test("a modification to nothing we store does not require review", () => {
+    // e.g. Plaid enriching the transaction's category, which isn't stored
+    const modified = makeTransaction({
+      ...stored,
+      date: new Date(stored.date.getTime())
+    })
+    expect(modificationRequiresReview({ stored, modified })).toBe(false)
   })
 })

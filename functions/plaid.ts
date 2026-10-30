@@ -220,6 +220,7 @@ function convertPlaidTransactionToDatabaseTransaction(
     date: new Date(plaidTransaction.authorized_date || plaidTransaction.date),
     pending: plaidTransaction.pending,
     pendingTransactionId: plaidTransaction.pending_transaction_id || null,
+    reviewedAt: null,
     createdAt: new Date(),
     updatedAt: new Date()
   }

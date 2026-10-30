@@ -22,12 +22,16 @@ export function CommandPalette({
   onOpenChange,
   transactions,
   onRename,
+  onReview,
+  onCloseAutoFocus,
   initialMode = "menu"
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   transactions: Transaction[]
   onRename: (newName: string) => void
+  onReview: () => void
+  onCloseAutoFocus?: (event: Event) => void
   initialMode?: Mode
 }) {
   const [mode, setMode] = useState<Mode>(initialMode)
@@ -63,6 +67,11 @@ export function CommandPalette({
       setMode("rename")
       return
     }
+    if (action.id === "review") {
+      onReview()
+      onOpenChange(false)
+      return
+    }
     // Group actions are placeholders until there is something to run
     onOpenChange(false)
   }
@@ -78,6 +87,7 @@ export function CommandPalette({
         <Dialog.Overlay className={styles.overlay} />
         <Dialog.Content
           className={styles.content}
+          onCloseAutoFocus={onCloseAutoFocus}
           onEscapeKeyDown={(event) => {
             if (mode === "rename" && initialMode === "menu") {
               event.preventDefault()
