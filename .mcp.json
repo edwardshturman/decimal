@@ -8,13 +8,17 @@
       "url": "https://mcp.vercel.com/compsigh/decimal",
       "type": "http"
     },
-    "linear-decimal": {
+    "linear": {
       "type": "http",
       "url": "https://mcp.linear.app/mcp"
     },
-    "notion-compsigh": {
+    "notion": {
       "type": "http",
       "url": "https://mcp.notion.com/mcp"
+    },
+    "neon": {
+      "type": "http",
+      "url": "https://mcp.neon.tech/mcp"
     }
   }
 }
