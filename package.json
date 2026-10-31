@@ -44,7 +44,8 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-plaid-link": "4.1.1",
-    "react-random-reveal": "2.0.1"
+    "react-random-reveal": "2.0.1",
+    "vaul": "1.1.2"
   },
   "devDependencies": {
     "@types/bun": "1.3.14",
