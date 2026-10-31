@@ -11,6 +11,7 @@ export type Action = {
 }
 
 export const ACTIONS: Action[] = [
+  { id: "review", label: "Mark as reviewed", scope: "both", shortcut: "E" },
   { id: "rename", label: "Rename", scope: "individual", shortcut: "R" },
   // Placeholders: no group actions are implemented yet
   { id: "merge", label: "Merge", scope: "group", shortcut: "M" },

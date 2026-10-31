@@ -32,7 +32,12 @@ import { after } from "next/server"
 import { revalidatePath } from "next/cache"
 import { syncItem } from "@/functions/items"
 import { getOrCreateCurrentUser } from "@/lib/auth"
-import { getTransactionFromDb } from "@/functions/db/transactions"
+import {
+  getTransactionFromDb,
+  markTransactionsReviewedInDb,
+  markTransactionsUnreviewedInDb,
+  resetReviewStatusInDb
+} from "@/functions/db/transactions"
 import { upsertTransactionOverrideSetInDb } from "@/functions/db/transactionOverrideSets"
 
 export async function exchangePublicTokenForAccessTokenServerAction(
@@ -164,6 +169,37 @@ export async function renameTransactionServerAction(
     name: trimmed === "" ? null : trimmed
   })
 
+  revalidatePath("/inbox")
+}
+
+export async function markTransactionsReviewedServerAction(
+  transactionIds: string[]
+) {
+  const user = await getOrCreateCurrentUser()
+
+  await markTransactionsReviewedInDb({ userId: user.id, transactionIds })
+  revalidatePath("/inbox")
+}
+
+export async function markTransactionsUnreviewedServerAction(
+  transactionIds: string[]
+) {
+  const user = await getOrCreateCurrentUser()
+
+  await markTransactionsUnreviewedInDb({ userId: user.id, transactionIds })
+  revalidatePath("/inbox")
+}
+
+/**
+ * Marks all of a user's transactions as unreviewed, returning them to the Inbox.
+ * Development only — the dev panel is hidden elsewhere, but Server Actions can be called directly, so this checks too.
+ */
+export async function resetReviewStatusServerAction() {
+  if (process.env.NODE_ENV !== "development") return
+
+  const user = await getOrCreateCurrentUser()
+
+  await resetReviewStatusInDb({ userId: user.id })
   revalidatePath("/inbox")
 }
 

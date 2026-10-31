@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test"
-import { planSyncOperations } from "@/functions/reconcile"
+import {
+  modificationRequiresReview,
+  planSyncOperations
+} from "@/functions/reconcile"
 import type { Transaction } from "@/generated/prisma/client"
 
 function makeTransaction(
@@ -13,6 +16,7 @@ function makeTransaction(
     name: "Coffee",
     pending: false,
     pendingTransactionId: null,
+    reviewedAt: null,
     createdAt: new Date("2026-01-01"),
     updatedAt: new Date("2026-01-01"),
     ...overrides
@@ -116,5 +120,36 @@ describe("planSyncOperations", () => {
     })
 
     expect(operations).toEqual([{ type: "update", transaction: modified }])
+  })
+})
+
+describe("modificationRequiresReview", () => {
+  const stored = makeTransaction({
+    id: "transaction-1",
+    reviewedAt: new Date("2026-01-02")
+  })
+
+  test("Plaid changing the name requires review", () => {
+    const modified = makeTransaction({ id: "transaction-1", name: "Tea" })
+    expect(modificationRequiresReview({ stored, modified })).toBe(true)
+  })
+
+  test("Plaid changing the amount requires review", () => {
+    const modified = makeTransaction({ id: "transaction-1", amount: 12.5 })
+    expect(modificationRequiresReview({ stored, modified })).toBe(true)
+  })
+
+  test("Plaid changing the date requires review", () => {
+    const modified = makeTransaction({
+      id: "transaction-1",
+      date: new Date("2026-01-03")
+    })
+    expect(modificationRequiresReview({ stored, modified })).toBe(true)
+  })
+
+  test("a modification to nothing we store does not require review", () => {
+    // e.g. Plaid enriching the transaction's category, which isn't stored
+    const modified = makeTransaction({ id: "transaction-1" })
+    expect(modificationRequiresReview({ stored, modified })).toBe(false)
   })
 })

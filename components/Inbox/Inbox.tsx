@@ -28,10 +28,17 @@ import type { CSSProperties, KeyboardEvent, MouseEvent } from "react"
 import { isActionAvailable } from "@/lib/actions"
 
 // Server Actions
-import { renameTransactionServerAction } from "@/functions/actions"
+import {
+  markTransactionsReviewedServerAction,
+  renameTransactionServerAction
+} from "@/functions/actions"
 
 // Styles
 import styles from "./Inbox.module.css"
+
+type OptimisticUpdate =
+  | { type: "rename"; id: string; name: string }
+  | { type: "review"; ids: string[] }
 
 export function Inbox({ transactions }: { transactions: Transaction[] }) {
   // Layout constants
@@ -42,10 +49,11 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
   const PAGINATE_DOWN_THRESHOLD = 8
 
   // State & refs
-  const [activeId, setActiveId] = useState(transactions[0].id)
+  const [activeId, setActiveId] = useState<string | undefined>(
+    transactions[0]?.id
+  )
   const [direction, setDirection] = useState<"up" | "down">("down")
-  const [paginationStart, setPaginationStart] = useState(0)
-  const [paginationEnd, setPaginationEnd] = useState(ROW_COUNT)
+  const [paginationOffset, setPaginationOffset] = useState(0)
   const [lastInput, setLastInput] = useState<"keyboard" | "mouse">()
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [paletteMode, setPaletteMode] = useState<"menu" | "rename">("menu")
@@ -54,14 +62,24 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
   )
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [, startRenameTransition] = useTransition()
-  const [optimisticTransactions, applyOptimisticRename] = useOptimistic(
+  const [, startReviewTransition] = useTransition()
+  const [optimisticTransactions, applyOptimisticUpdate] = useOptimistic(
     transactions,
-    (state, { id, name }: { id: string; name: string }) =>
-      state.map((transaction) =>
-        transaction.id === id ? { ...transaction, name } : transaction
+    (state, update: OptimisticUpdate) => {
+      if (update.type === "review")
+        return state.filter(
+          (transaction) => !update.ids.includes(transaction.id)
+        )
+      return state.map((transaction) =>
+        transaction.id === update.id
+          ? { ...transaction, name: update.name }
+          : transaction
       )
+    }
   )
   const liRefs = useRef<Record<string, HTMLElement>>({})
+  // A row to focus once it's rendered, for when focus has to move to a row that may not be on screen yet
+  const pendingFocusIdRef = useRef<string | null>(null)
 
   // Environment
   const hasMounted = useSyncExternalStore(
@@ -77,6 +95,12 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
     (a, b) => b.date.getTime() - a.date.getTime()
   )
   const selectedTransactions = sorted.filter((t) => selectedIds.has(t.id))
+  // The window is derived from the stored offset rather than stored outright, so that when reviews shrink the list it stays full and never runs past the end
+  const paginationStart = Math.max(
+    0,
+    Math.min(paginationOffset, sorted.length - ROW_COUNT)
+  )
+  const paginationEnd = Math.min(paginationStart + ROW_COUNT, sorted.length)
   const globalIndex = sorted.findIndex((t) => t.id === activeId)
   const visibleIndex = globalIndex === -1 ? 0 : globalIndex - paginationStart
   const highlightStyles: CSSProperties = {
@@ -113,6 +137,16 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
       window.removeEventListener("pointermove", handlePointerMove)
     }
   }, [])
+
+  // Focus a pending row once it has rendered
+  useEffect(() => {
+    const id = pendingFocusIdRef.current
+    if (!id) return
+    const li = liRefs.current[id]
+    if (!li) return
+    pendingFocusIdRef.current = null
+    li.focus({ preventScroll: true })
+  })
 
   // Handlers
   function handleSelect(transaction: Transaction) {
@@ -156,10 +190,38 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
     const target = paletteTransactions[0]
     if (!target) return
     startRenameTransition(async () => {
-      applyOptimisticRename({ id: target.id, name: newName })
+      applyOptimisticUpdate({ type: "rename", id: target.id, name: newName })
       await renameTransactionServerAction(target.id, newName)
     })
     clearSelection()
+  }
+  function handleReview(targets: Transaction[]) {
+    if (targets.length === 0) return
+    const targetIds = targets.map((t) => t.id)
+
+    // Reviewed rows leave the Inbox, so if the active row is one of them, move to the next row that's staying, or the previous one if there's nothing below
+    if (activeId && targetIds.includes(activeId)) {
+      const activeIndex = sorted.findIndex((t) => t.id === activeId)
+      const isStaying = (t: Transaction) => !targetIds.includes(t.id)
+      const nextTransaction =
+        sorted.slice(activeIndex + 1).find(isStaying) ??
+        sorted.slice(0, activeIndex).findLast(isStaying)
+      setActiveId(nextTransaction?.id)
+      pendingFocusIdRef.current = nextTransaction?.id ?? null
+    }
+
+    startReviewTransition(async () => {
+      applyOptimisticUpdate({ type: "review", ids: targetIds })
+      await markTransactionsReviewedServerAction(targetIds)
+    })
+    clearSelection()
+  }
+  function handlePaletteCloseAutoFocus(event: Event) {
+    // Radix returns focus to whatever opened the palette, which may be a row that was just reviewed, or the selection bar, which closes once its selection is acted on
+    // Instead, keep focus on a row that a review moved it to, or otherwise return it to the active row
+    event.preventDefault()
+    if (document.activeElement !== document.body) return
+    if (activeId) liRefs.current[activeId]?.focus({ preventScroll: true })
   }
   function handleClick(
     event: MouseEvent<HTMLLIElement>,
@@ -207,6 +269,16 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
       handleRenameKey(transaction)
       return
     }
+    if (
+      event.key === "e" &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.altKey
+    ) {
+      event.preventDefault()
+      handleReview(getActionTargets(transaction))
+      return
+    }
     if (event.key === "ArrowDown") {
       setDirection("down")
       return
@@ -218,8 +290,8 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
     if (event.key === "j") {
       event.preventDefault()
       setDirection("down")
-      const currentIndex = optimisticTransactions.indexOf(transaction)
-      const nextTransaction = optimisticTransactions[currentIndex + 1]
+      const currentIndex = sorted.indexOf(transaction)
+      const nextTransaction = sorted[currentIndex + 1]
       if (!nextTransaction) return
       setActiveId(nextTransaction.id)
       liRefs.current[nextTransaction.id]?.focus({
@@ -230,8 +302,8 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
     if (event.key === "k") {
       event.preventDefault()
       setDirection("up")
-      const currentIndex = optimisticTransactions.indexOf(transaction)
-      const previousTransaction = optimisticTransactions[currentIndex - 1]
+      const currentIndex = sorted.indexOf(transaction)
+      const previousTransaction = sorted[currentIndex - 1]
       if (!previousTransaction) return
       setActiveId(previousTransaction.id)
       liRefs.current[previousTransaction.id]?.focus({
@@ -293,7 +365,9 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
           aria-label="Transaction Inbox"
           aria-multiselectable
         >
-          <div className={styles.highlight} style={highlightStyles} />
+          {sorted.length > 0 && (
+            <div className={styles.highlight} style={highlightStyles} />
+          )}
           <AnimatePresence mode="popLayout">
             {sorted
               .slice(paginationStart, paginationEnd)
@@ -311,19 +385,14 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
                     // Go down when towards the bottom of the list
                     if (
                       index >= PAGINATE_DOWN_THRESHOLD &&
-                      paginationEnd !== optimisticTransactions.length
+                      paginationEnd < sorted.length
                     ) {
-                      setPaginationStart((prev) => prev + 1)
-                      setPaginationEnd((prev) => prev + 1)
+                      setPaginationOffset(paginationStart + 1)
                     }
 
                     // Go up when towards the top of the list
-                    if (
-                      index <= PAGINATE_UP_THRESHOLD &&
-                      paginationStart !== 0
-                    ) {
-                      setPaginationStart((prev) => prev - 1)
-                      setPaginationEnd((prev) => prev - 1)
+                    if (index <= PAGINATE_UP_THRESHOLD && paginationStart > 0) {
+                      setPaginationOffset(paginationStart - 1)
                     }
                   }}
                 >
@@ -393,7 +462,7 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
         <div
           className={styles.progressiveBlurContainer}
           style={{
-            opacity: paginationEnd < optimisticTransactions.length ? 1 : 0,
+            opacity: paginationEnd < sorted.length ? 1 : 0,
             height: ROW_HEIGHT * 4,
             bottom: 0,
             marginBottom: -ROW_HEIGHT
@@ -413,7 +482,7 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
           style={{
             width: CHEVRON_DIMENSIONS,
             height: CHEVRON_DIMENSIONS,
-            opacity: paginationEnd < optimisticTransactions.length ? 0.4 : 0
+            opacity: paginationEnd < sorted.length ? 0.4 : 0
           }}
         >
           <svg
@@ -439,6 +508,8 @@ export function Inbox({ transactions }: { transactions: Transaction[] }) {
         onOpenChange={setPaletteOpen}
         transactions={paletteTransactions}
         onRename={handleRename}
+        onReview={() => handleReview(paletteTransactions)}
+        onCloseAutoFocus={handlePaletteCloseAutoFocus}
         initialMode={paletteMode}
       />
     </>

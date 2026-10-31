@@ -51,6 +51,7 @@ model Transaction {
   name                 String
   pending              Boolean
   pendingTransactionId String?
+  reviewedAt           DateTime?
   account              Account                 @relation("AccountTransactions", fields: [accountId], references: [id])
   overrides            TransactionOverrideSet? @relation("TransactionToOverrideSet")
   createdAt            DateTime                @default(now())
