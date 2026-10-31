@@ -11,6 +11,10 @@
     "linear-decimal": {
       "type": "http",
       "url": "https://mcp.linear.app/mcp"
+    },
+    "notion-compsigh": {
+      "type": "http",
+      "url": "https://mcp.notion.com/mcp"
     }
   }
 }
