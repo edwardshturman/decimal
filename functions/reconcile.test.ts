@@ -129,23 +129,27 @@ describe("modificationRequiresReview", () => {
     reviewedAt: new Date("2026-01-02")
   })
 
-  test("a changed name, amount, or date requires review", () => {
-    for (const change of [
-      { name: "Coffee & Pastry" },
-      { amount: 12.5 },
-      { date: new Date("2026-01-03") }
-    ]) {
-      const modified = makeTransaction({ ...stored, ...change })
-      expect(modificationRequiresReview({ stored, modified })).toBe(true)
-    }
+  test("Plaid changing the name requires review", () => {
+    const modified = makeTransaction({ id: "transaction-1", name: "Tea" })
+    expect(modificationRequiresReview({ stored, modified })).toBe(true)
+  })
+
+  test("Plaid changing the amount requires review", () => {
+    const modified = makeTransaction({ id: "transaction-1", amount: 12.5 })
+    expect(modificationRequiresReview({ stored, modified })).toBe(true)
+  })
+
+  test("Plaid changing the date requires review", () => {
+    const modified = makeTransaction({
+      id: "transaction-1",
+      date: new Date("2026-01-03")
+    })
+    expect(modificationRequiresReview({ stored, modified })).toBe(true)
   })
 
   test("a modification to nothing we store does not require review", () => {
     // e.g. Plaid enriching the transaction's category, which isn't stored
-    const modified = makeTransaction({
-      ...stored,
-      date: new Date(stored.date.getTime())
-    })
+    const modified = makeTransaction({ id: "transaction-1" })
     expect(modificationRequiresReview({ stored, modified })).toBe(false)
   })
 })
