@@ -1,0 +1,285 @@
+button.tab {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 12px;
+  border: 1px dashed var(--color-dark-blue-70);
+  /* Matches the background, so where the tab meets the drawer it paints over the drawer's top border */
+  border-bottom: 1px solid var(--color-background);
+  border-radius: 8px 8px 0 0;
+  color: var(--color-accent);
+  background-color: var(--color-background);
+  cursor: pointer;
+
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.2em;
+}
+
+/* The default outline would box in the tab's open bottom edge, so the ring is drawn on its sides & top instead: an accent border, thickened by inset shadows */
+button.tab:focus-visible {
+  outline: none;
+  border-style: solid;
+  border-color: var(--color-accent);
+  border-bottom-color: var(--color-background);
+  box-shadow:
+    inset 1px 0 0 var(--color-accent),
+    inset -1px 0 0 var(--color-accent),
+    inset 0 1px 0 var(--color-accent);
+}
+
+kbd.shortcut {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--color-accent-10);
+  color: var(--color-accent-text);
+  font-family: inherit;
+  font-size: 0.75rem;
+  line-height: 1.2em;
+}
+
+svg.chevron {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+svg.chevron[data-open="true"] {
+  rotate: 180deg;
+}
+
+/* Off to the left, clear of the selection bar at the bottom center */
+button.dockedTab {
+  position: fixed;
+  left: 24px;
+  /* Lines up exactly with the attached tab as the drawer starts to slide up, which hangs 2px below the drawer's top edge */
+  bottom: -2px;
+  z-index: 5;
+  transition: translate 200ms ease;
+}
+
+/* Continues the tab below the viewport, so lifting it on hover doesn't open a gap beneath it */
+button.dockedTab::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: -1px;
+  right: -1px;
+  height: 8px;
+  border: 1px dashed var(--color-dark-blue-70);
+  border-top: none;
+  border-bottom: none;
+  background-color: var(--color-background);
+}
+
+button.dockedTab:focus-visible::after {
+  border-left-style: solid;
+  border-right-style: solid;
+  border-color: var(--color-accent);
+  box-shadow:
+    inset 1px 0 0 var(--color-accent),
+    inset -1px 0 0 var(--color-accent);
+}
+
+/* Peeks up, hinting at the drawer it opens */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  button.dockedTab:hover {
+    translate: 0 -4px;
+  }
+}
+
+button.dockedTab:focus-visible {
+  translate: 0 -4px;
+}
+
+/* Hangs off the top of the drawer like a folder tab. It overlaps the drawer by a pixel past its 1px top border, so subpixel rounding mid-animation can't let the border show through */
+button.attachedTab {
+  position: absolute;
+  left: 24px;
+  bottom: calc(100% - 1px);
+}
+
+/* The tab's hit area, including its border */
+button.attachedTab::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: 0;
+}
+
+/* Hovering moves the tab down with the drawer, away from the cursor. While hovered, its hit area stretches back up over where it was, so a cursor near the top edge doesn't fall off, unhover the tab, and set it bouncing */
+div.sheet:has(button.attachedTab:hover) button.attachedTab::before {
+  top: -5px;
+}
+
+/* Vaul's own stylesheet animates over 0.5s, which feels sluggish for a dev panel */
+div.overlay[data-vaul-overlay],
+div.content[data-vaul-drawer] {
+  animation-duration: 200ms;
+  animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+div.overlay[data-vaul-overlay] {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  /* Lighter than the shared overlay color, so the Inbox stays readable behind the drawer */
+  background: hsla(210deg, 050%, 030%, 0.06);
+}
+
+/* Vaul owns this element, moving it with transforms and writing its own inline transitions. Everything visible lives on the sheet inside, so it can be animated without Vaul overriding it */
+div.content[data-vaul-drawer] {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 11;
+  outline: none;
+  transition-duration: 200ms;
+
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+}
+
+/* Vaul extends the drawer below the viewport so dragging it up doesn't open a gap. It inherits the drawer's background, which is now transparent, so it's set here */
+div.content[data-vaul-drawer]::after {
+  background: var(--color-background);
+}
+
+div.sheet {
+  position: relative;
+  border-top: 1px dashed var(--color-dark-blue-70);
+  background: var(--color-background);
+  transition: translate 200ms ease;
+}
+
+/* Nudges the drawer down when its tab is hovered, hinting that clicking it closes the drawer — the mirror of the docked tab peeking up */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  div.content[data-vaul-drawer]:not(:global(.vaul-dragging))
+    div.sheet:has(button.attachedTab:hover) {
+    translate: 0 4px;
+  }
+}
+
+div.sheet:has(button.attachedTab:focus-visible) {
+  translate: 0 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  div.overlay[data-vaul-overlay],
+  div.content[data-vaul-drawer] {
+    animation-duration: 0.01ms;
+  }
+}
+
+div.inner {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+div.header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 16px 4px;
+}
+
+h2.title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+span.env {
+  padding: 1px 6px;
+  border: 1px dashed var(--color-accent-20);
+  color: var(--color-accent-text);
+  font-size: 0.75rem;
+}
+
+p.description {
+  padding: 0 16px 12px;
+  border-bottom: 1px dashed var(--color-accent-20);
+  color: var(--color-accent-text);
+  font-size: 0.875rem;
+}
+
+ul.actions {
+  list-style: none;
+  padding-bottom: 24px;
+}
+
+ul.actions > li + li {
+  border-top: 1px dashed var(--color-accent-20);
+}
+
+form.action {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 12px 16px;
+}
+
+div.actionText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+div.actionHeading {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+}
+
+span.actionName {
+  flex-shrink: 0;
+  color: var(--color-foreground);
+}
+
+p.actionDescription {
+  color: var(--color-accent-text);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+code.actionDetail {
+  overflow: hidden;
+  color: var(--color-accent-text);
+  opacity: 0.7;
+  font-family: inherit;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+form.action button {
+  flex-shrink: 0;
+  min-width: 10ch;
+  padding: 4px 8px;
+  border: 1px dashed var(--color-accent);
+  border-radius: 0;
+  background-color: transparent;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+}
+
+form.action button:hover {
+  background-color: var(--color-accent-10);
+}
+
+form.action button:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}

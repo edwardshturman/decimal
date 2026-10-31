@@ -5,6 +5,7 @@ import { getAccountsAndTransactionsFromDb } from "@/functions/db/transactions"
 
 // Components
 import { Inbox } from "@/components/Inbox"
+import { DevDrawer } from "@/components/DevDrawer"
 import { PlaidLink } from "@/components/PlaidLink"
 
 export default async function Plaid() {
@@ -25,6 +26,7 @@ export default async function Plaid() {
         {plaidLink}
         {transactions.length !== 0 && <Inbox transactions={transactions} />}
       </main>
+      {process.env.NODE_ENV === "development" && <DevDrawer />}
     </>
   )
 }
