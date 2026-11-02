@@ -1,7 +1,7 @@
 import prisma from "@/functions/db"
 import { removeItemFromPlaid } from "@/functions/plaid"
 import { deleteItemFromDb } from "@/functions/db/items"
-import { decryptAccessToken } from "@/functions/crypto/utils"
+import { decryptItemAccessToken } from "@/functions/crypto/utils"
 
 type CreateAccountInput = {
   id: string
@@ -99,13 +99,7 @@ export async function deleteAccountFromDb({
     console.log(
       "Account was the only one associated with the Item, deleting Item"
     )
-    const encryptedAccessToken = associatedItem.accessToken
-    const encryptionKey = process.env.KEY_IN_USE!
-    const { plainText: accessToken } = decryptAccessToken(
-      encryptedAccessToken,
-      encryptionKey,
-      associatedItem.encryptionKeyVersion
-    )
+    const accessToken = decryptItemAccessToken(associatedItem)
     console.log("Removing Item from Plaid...")
     await removeItemFromPlaid({ accessToken })
     console.log("Removed Item from Plaid")

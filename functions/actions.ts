@@ -25,7 +25,7 @@ import {
   matchUserAccountFromDb
 } from "@/functions/db/accounts"
 import {
-  decryptAccessToken,
+  decryptItemAccessToken,
   encryptAccessToken
 } from "@/functions/crypto/utils"
 import { after } from "next/server"
@@ -203,20 +203,39 @@ export async function resetReviewStatusServerAction() {
   revalidatePath("/inbox")
 }
 
+/**
+ * Fires a test `SYNC_UPDATES_AVAILABLE` webhook for the first of a user's Items that will take one.
+ * Sandbox only.
+ */
 export async function fireTestWebhookServerAction() {
   const user = await getOrCreateCurrentUser()
 
   const userItems = await getItemsFromDb({ userId: user.id })
-  const firstAccessTokenEncrypted = userItems[0].accessToken
-  const encryptionKey = process.env.KEY_IN_USE!
-  const keyVersion = process.env.KEY_VERSION!
-  const firstAccessToken = decryptAccessToken(
-    firstAccessTokenEncrypted,
-    encryptionKey,
-    keyVersion
-  ).plainText
+  for (const item of userItems) {
+    // Every Item is tried, even one recorded as broken — Plaid's answer is current, whereas the recorded error may be stale
+    try {
+      await fireTestWebhook({ accessToken: decryptItemAccessToken(item) })
+      return
+    } catch (error) {
+      const plaidError = getPlaidError(error)
+      if (!plaidError) throw error
 
-  await fireTestWebhook({ accessToken: firstAccessToken })
+      console.error(
+        `[Plaid] Could not fire test webhook for Item ${item.id} — ${describePlaidError(plaidError)}`
+      )
+
+      // The Item has gone bad since it was last synced, so record that to surface the reconnection prompt, and try the next one
+      if (requiresReauthentication(plaidError.error_code)) {
+        await setItemPlaidErrorCodeInDb({
+          itemId: item.id,
+          plaidErrorCode: plaidError.error_code
+        })
+        revalidatePath("/settings")
+      }
+    }
+  }
+
+  console.log("[Plaid] No healthy Items to fire a test webhook for")
 }
 
 /**
@@ -227,13 +246,8 @@ export async function resetItemLoginServerAction() {
   const user = await getOrCreateCurrentUser()
 
   const userItems = await getItemsFromDb({ userId: user.id })
-  const encryptionKey = process.env.KEY_IN_USE!
   for (const item of userItems) {
-    const { plainText: accessToken } = decryptAccessToken(
-      item.accessToken,
-      encryptionKey,
-      item.encryptionKeyVersion
-    )
+    const accessToken = decryptItemAccessToken(item)
     let plaidErrorCode = "ITEM_LOGIN_REQUIRED"
     try {
       await resetSandboxItemLogin({ accessToken })
