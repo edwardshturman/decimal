@@ -1,5 +1,8 @@
 import { randomBytes, createCipheriv, createDecipheriv } from "crypto"
 
+// Types
+import type { Item } from "@/generated/prisma/client"
+
 export class GCM {
   /**
     "If the IV is created randomly at each invocation, the birthday paradox kicks in with 96 bit nonces too.
@@ -116,4 +119,23 @@ export function decryptAccessToken(
   const decrypted = new GCM(encryptionKey).decrypt(cipherText)
 
   return { plainText: decrypted, keyVersion: encryptionKeyVersion }
+}
+
+/**
+ * Decrypts the access token stored on an Item.
+ * Every Item token is decrypted through here, so that choosing the key by the Item's `encryptionKeyVersion` — needed before keys can be rotated — is a change in one place.
+ *
+ * @param item the Item whose access token to decrypt, as stored in the database
+ * @returns the plaintext access token
+ */
+export function decryptItemAccessToken(
+  item: Pick<Item, "accessToken" | "encryptionKeyVersion">
+) {
+  const encryptionKey = process.env.KEY_IN_USE!
+  const { plainText } = decryptAccessToken(
+    item.accessToken,
+    encryptionKey,
+    item.encryptionKeyVersion
+  )
+  return plainText
 }

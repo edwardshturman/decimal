@@ -9,8 +9,7 @@ import {
   getPlaidError,
   removeItemFromPlaid,
   requiresReauthentication,
-  resetSandboxItemLogin,
-  warnsOfPendingDisconnection
+  resetSandboxItemLogin
 } from "@/functions/plaid"
 import {
   checkForRedundantItem,
@@ -26,7 +25,7 @@ import {
   matchUserAccountFromDb
 } from "@/functions/db/accounts"
 import {
-  decryptAccessToken,
+  decryptItemAccessToken,
   encryptAccessToken
 } from "@/functions/crypto/utils"
 import { after } from "next/server"
@@ -205,30 +204,17 @@ export async function resetReviewStatusServerAction() {
 }
 
 /**
- * Fires a test `SYNC_UPDATES_AVAILABLE` webhook for the first of a user's Items that can take one.
+ * Fires a test `SYNC_UPDATES_AVAILABLE` webhook for the first of a user's Items that will take one.
  * Sandbox only.
  */
 export async function fireTestWebhookServerAction() {
   const user = await getOrCreateCurrentUser()
 
   const userItems = await getItemsFromDb({ userId: user.id })
-  const encryptionKey = process.env.KEY_IN_USE!
   for (const item of userItems) {
-    // Plaid rejects webhooks for Items that need re-authenticating, so don't bother asking — though Items merely warned of a pending disconnection still work
-    if (
-      requiresReauthentication(item.plaidErrorCode) &&
-      !warnsOfPendingDisconnection(item.plaidErrorCode)
-    ) {
-      continue
-    }
-
-    const { plainText: accessToken } = decryptAccessToken(
-      item.accessToken,
-      encryptionKey,
-      item.encryptionKeyVersion
-    )
+    // Every Item is tried, even one recorded as broken — Plaid's answer is current, whereas the recorded error may be stale
     try {
-      await fireTestWebhook({ accessToken })
+      await fireTestWebhook({ accessToken: decryptItemAccessToken(item) })
       return
     } catch (error) {
       const plaidError = getPlaidError(error)
@@ -260,13 +246,8 @@ export async function resetItemLoginServerAction() {
   const user = await getOrCreateCurrentUser()
 
   const userItems = await getItemsFromDb({ userId: user.id })
-  const encryptionKey = process.env.KEY_IN_USE!
   for (const item of userItems) {
-    const { plainText: accessToken } = decryptAccessToken(
-      item.accessToken,
-      encryptionKey,
-      item.encryptionKeyVersion
-    )
+    const accessToken = decryptItemAccessToken(item)
     let plaidErrorCode = "ITEM_LOGIN_REQUIRED"
     try {
       await resetSandboxItemLogin({ accessToken })

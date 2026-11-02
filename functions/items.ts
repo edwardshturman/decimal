@@ -5,7 +5,7 @@ import {
   warnsOfPendingDisconnection
 } from "@/functions/plaid"
 import { setItemPlaidErrorCodeInDb } from "@/functions/db/items"
-import { decryptAccessToken } from "@/functions/crypto/utils"
+import { decryptItemAccessToken } from "@/functions/crypto/utils"
 
 // Types
 import type { Item } from "@/generated/prisma/client"
@@ -14,16 +14,6 @@ import type { Item } from "@/generated/prisma/client"
  * Item-level operations spanning both Plaid and the database.
  * These live outside `functions/plaid.ts` to keep it free of a circular dependency on `functions/db/items.ts`.
  */
-
-function getAccessToken(item: Item) {
-  const encryptionKey = process.env.KEY_IN_USE!
-  const { plainText } = decryptAccessToken(
-    item.accessToken,
-    encryptionKey,
-    item.encryptionKeyVersion
-  )
-  return plainText
-}
 
 /**
  * Syncs an Item's transactions, recording any Plaid error on the Item instead of throwing.
@@ -36,7 +26,7 @@ function getAccessToken(item: Item) {
  */
 export async function syncItem(item: Item) {
   try {
-    await syncTransactions(getAccessToken(item))
+    await syncTransactions(decryptItemAccessToken(item))
   } catch (error) {
     const plaidErrorCode = getPlaidErrorCode(error)
     if (!plaidErrorCode) throw error
@@ -66,7 +56,7 @@ export async function syncItem(item: Item) {
 export async function getUpdateModeLinkTokenForItem(item: Item) {
   const response = await createUpdateModeLinkToken({
     userId: item.userId,
-    accessToken: getAccessToken(item)
+    accessToken: decryptItemAccessToken(item)
   })
   return response.link_token
 }

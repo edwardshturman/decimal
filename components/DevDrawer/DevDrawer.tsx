@@ -22,7 +22,7 @@ const DEV_ACTIONS = [
   {
     name: "Fire test webhook",
     description:
-      "Has Plaid send a new-transactions webhook for your first bank, triggering a sync",
+      "Has Plaid send a new-transactions webhook for the first bank that accepts it, triggering a sync",
     detail: "POST /sandbox/item/fire_webhook",
     action: fireTestWebhookServerAction
   },
