@@ -1,6 +1,7 @@
 // Functions
 import { createLinkToken } from "@/functions/plaid"
 import { getOrCreateCurrentUser } from "@/lib/auth"
+import { isDevelopment } from "@/lib/utils"
 import { getAccountsAndTransactionsFromDb } from "@/functions/db/transactions"
 
 // Components
@@ -26,7 +27,7 @@ export default async function Plaid() {
         {plaidLink}
         {transactions.length !== 0 && <Inbox transactions={transactions} />}
       </main>
-      {process.env.NODE_ENV === "development" && <DevDrawer />}
+      {isDevelopment() && <DevDrawer />}
     </>
   )
 }
