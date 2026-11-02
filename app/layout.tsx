@@ -1,6 +1,9 @@
 // Constants
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants"
 
+// Functions
+import { isDevelopment } from "@/lib/utils"
+
 // Types
 import type { Metadata } from "next"
 
@@ -76,7 +79,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const shouldInjectToolbar = process.env.NODE_ENV === "development"
   return (
     <html
       lang="en"
@@ -89,7 +91,7 @@ export default function RootLayout({
             <BackToInbox />
           </header>
           {children}
-          {shouldInjectToolbar && <VercelToolbar />}
+          {isDevelopment() && <VercelToolbar />}
         </div>
       </body>
     </html>

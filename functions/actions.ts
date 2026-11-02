@@ -32,6 +32,7 @@ import { after } from "next/server"
 import { revalidatePath } from "next/cache"
 import { syncItem } from "@/functions/items"
 import { getOrCreateCurrentUser } from "@/lib/auth"
+import { isDevelopment } from "@/lib/utils"
 import {
   getTransactionFromDb,
   markTransactionsReviewedInDb,
@@ -192,10 +193,10 @@ export async function markTransactionsUnreviewedServerAction(
 
 /**
  * Marks all of a user's transactions as unreviewed, returning them to the Inbox.
- * Development only — the dev panel is hidden elsewhere, but Server Actions can be called directly, so this checks too.
+ * Development only.
  */
 export async function resetReviewStatusServerAction() {
-  if (process.env.NODE_ENV !== "development") return
+  if (!isDevelopment()) return
 
   const user = await getOrCreateCurrentUser()
 
@@ -205,9 +206,11 @@ export async function resetReviewStatusServerAction() {
 
 /**
  * Fires a test `SYNC_UPDATES_AVAILABLE` webhook for the first of a user's Items that will take one.
- * Sandbox only.
+ * Development only, against Sandbox.
  */
 export async function fireTestWebhookServerAction() {
+  if (!isDevelopment()) return
+
   const user = await getOrCreateCurrentUser()
 
   const userItems = await getItemsFromDb({ userId: user.id })
@@ -240,9 +243,11 @@ export async function fireTestWebhookServerAction() {
 
 /**
  * Expires the login on every Item a user has, so the update mode flow can be exercised on demand.
- * Sandbox only.
+ * Development only, against Sandbox.
  */
 export async function resetItemLoginServerAction() {
+  if (!isDevelopment()) return
+
   const user = await getOrCreateCurrentUser()
 
   const userItems = await getItemsFromDb({ userId: user.id })
