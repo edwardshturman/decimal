@@ -22,6 +22,8 @@
     "start": "next start",
     "migrate:dev": "dotenv -e .env.local prisma migrate dev",
     "migrate:deploy": "dotenv -e .env.production prisma migrate deploy",
+    "reencrypt-tokens:dev": "dotenv -e .env.local -- bun --no-env-file scripts/reencrypt-access-tokens.ts",
+    "reencrypt-tokens:deploy": "dotenv -e .env.production -- bun --no-env-file scripts/reencrypt-access-tokens.ts",
     "refresh": "git pull && vc env pull"
   },
   "lint-staged": {
