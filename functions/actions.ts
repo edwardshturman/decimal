@@ -2,15 +2,14 @@
 
 // Functions
 import {
-  describePlaidError,
   exchangePublicTokenForAccessToken,
   fireTestWebhook,
   getAccountsFromPlaid,
-  getPlaidError,
   removeItemFromPlaid,
   requiresReauthentication,
   resetSandboxItemLogin
 } from "@/functions/plaid"
+import { describePlaidError, getPlaidError } from "@/functions/plaid-errors"
 import {
   checkForRedundantItem,
   createItemInDb,

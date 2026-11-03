@@ -1,9 +1,9 @@
 import {
   createUpdateModeLinkToken,
-  getPlaidErrorCode,
   syncTransactions,
   warnsOfPendingDisconnection
 } from "@/functions/plaid"
+import { getPlaidErrorCode } from "@/functions/plaid-errors"
 import { setItemPlaidErrorCodeInDb } from "@/functions/db/items"
 import { decryptItemAccessToken } from "@/functions/crypto/utils"
 

@@ -3,7 +3,6 @@ import {
   CountryCode,
   type LinkTokenCreateRequest,
   PlaidApi,
-  type PlaidError,
   PlaidEnvironments,
   Products,
   type RemovedTransaction,
@@ -23,6 +22,7 @@ import { Transaction } from "@/generated/prisma/client"
 import { planSyncOperations } from "@/functions/reconcile"
 import { getAccountsFromDb } from "@/functions/db/accounts"
 import { createCursor, getCursor, updateCursor } from "@/functions/db/cursors"
+import { rethrowRedactedPlaidError } from "@/functions/plaid-errors"
 
 if (!process.env.PLAID_CLIENT_ID) {
   throw new Error("Missing env var PLAID_CLIENT_ID")
@@ -48,6 +48,10 @@ const configuration = new Configuration({
   }
 })
 
+/**
+ * Raw Plaid errors carry the secret and access token in plain text, so never let one escape this file — end every call in `.catch(rethrowRedactedPlaidError)`.
+ * @see PlaidRequestError
+ */
 const client = new PlaidApi(configuration)
 
 /**
@@ -87,35 +91,6 @@ export function warnsOfPendingDisconnection(plaidErrorCode: string | null) {
   return PENDING_ERROR_CODES.has(plaidErrorCode)
 }
 
-/**
- * Plaid SDK calls reject with an Axios error carrying the {@link PlaidError} as its response body.
- * The Axios error itself only reports the status code, so anything wanting to know what actually went wrong has to unwrap it.
- *
- * @param error an error thrown by a Plaid SDK call
- * @returns the Plaid error, or `null` if the error did not come from Plaid
- */
-export function getPlaidError(error: unknown) {
-  const data = (error as { response?: { data?: Partial<PlaidError> } })
-    ?.response?.data
-  if (typeof data?.error_code !== "string") return null
-  return data as PlaidError
-}
-
-/**
- * @param error an error thrown by a Plaid SDK call
- * @returns the Plaid `error_code`, e.g. `ITEM_LOGIN_REQUIRED`, or `null` if the error did not come from Plaid
- */
-export function getPlaidErrorCode(error: unknown) {
-  return getPlaidError(error)?.error_code ?? null
-}
-
-/**
- * Formats a Plaid error for logging, since the code alone rarely says enough to act on.
- */
-export function describePlaidError(plaidError: PlaidError) {
-  return `${plaidError.error_code}: ${plaidError.error_message}`
-}
-
 export async function createLinkToken(userId: string) {
   const webhookUrl =
     process.env.WEBHOOK_URL ||
@@ -133,7 +108,9 @@ export async function createLinkToken(userId: string) {
   }
 
   console.log("[Plaid] Creating link token with webhook URL:", webhookUrl)
-  const response = await client.linkTokenCreate(linkTokenConfig)
+  const response = await client
+    .linkTokenCreate(linkTokenConfig)
+    .catch(rethrowRedactedPlaidError)
   return response.data
 }
 
@@ -166,14 +143,18 @@ export async function createUpdateModeLinkToken({
   }
 
   console.log("[Plaid] Creating update mode link token")
-  const response = await client.linkTokenCreate(linkTokenConfig)
+  const response = await client
+    .linkTokenCreate(linkTokenConfig)
+    .catch(rethrowRedactedPlaidError)
   return response.data
 }
 
 export async function exchangePublicTokenForAccessToken(publicToken: string) {
-  const response = await client.itemPublicTokenExchange({
-    public_token: publicToken
-  })
+  const response = await client
+    .itemPublicTokenExchange({
+      public_token: publicToken
+    })
+    .catch(rethrowRedactedPlaidError)
 
   const accessToken = response.data.access_token
   return accessToken
@@ -184,7 +165,9 @@ export async function getItemFromPlaid({
 }: {
   accessToken: string
 }) {
-  const response = await client.itemGet({ access_token: accessToken })
+  const response = await client
+    .itemGet({ access_token: accessToken })
+    .catch(rethrowRedactedPlaidError)
   return response.data.item
 }
 
@@ -193,7 +176,9 @@ export async function removeItemFromPlaid({
 }: {
   accessToken: string
 }) {
-  const response = await client.itemRemove({ access_token: accessToken })
+  const response = await client
+    .itemRemove({ access_token: accessToken })
+    .catch(rethrowRedactedPlaidError)
   return response.data.request_id
 }
 
@@ -202,9 +187,11 @@ export async function getAccountsFromPlaid({
 }: {
   accessToken: string
 }) {
-  const accountsResponse = await client.accountsGet({
-    access_token: accessToken
-  })
+  const accountsResponse = await client
+    .accountsGet({
+      access_token: accessToken
+    })
+    .catch(rethrowRedactedPlaidError)
   return accountsResponse.data
 }
 
@@ -241,14 +228,16 @@ export async function syncTransactions(accessToken: string) {
     let hasMore = true
 
     while (hasMore) {
-      const transactions = await client.transactionsSync({
-        access_token: accessToken,
-        cursor,
-        options: {
-          account_id: account.id,
-          include_original_description: true
-        }
-      })
+      const transactions = await client
+        .transactionsSync({
+          access_token: accessToken,
+          cursor,
+          options: {
+            account_id: account.id,
+            include_original_description: true
+          }
+        })
+        .catch(rethrowRedactedPlaidError)
       const data = transactions.data
 
       added = added.concat(
@@ -319,12 +308,14 @@ export async function fireTestWebhook({
 }: {
   accessToken: string
 }) {
-  const fireWebhookResponse = await client.sandboxItemFireWebhook({
-    access_token: accessToken,
-    webhook_type: WebhookType.Transactions,
-    webhook_code:
-      SandboxItemFireWebhookRequestWebhookCodeEnum.SyncUpdatesAvailable
-  })
+  const fireWebhookResponse = await client
+    .sandboxItemFireWebhook({
+      access_token: accessToken,
+      webhook_type: WebhookType.Transactions,
+      webhook_code:
+        SandboxItemFireWebhookRequestWebhookCodeEnum.SyncUpdatesAvailable
+    })
+    .catch(rethrowRedactedPlaidError)
 
   console.log(
     "[Plaid] Fire webhook response:",
@@ -344,8 +335,10 @@ export async function resetSandboxItemLogin({
 }: {
   accessToken: string
 }) {
-  const response = await client.sandboxItemResetLogin({
-    access_token: accessToken
-  })
+  const response = await client
+    .sandboxItemResetLogin({
+      access_token: accessToken
+    })
+    .catch(rethrowRedactedPlaidError)
   return response.data
 }
