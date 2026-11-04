@@ -22,8 +22,10 @@
     "start": "next start",
     "migrate:dev": "dotenv -e .env.local prisma migrate dev",
     "migrate:deploy": "dotenv -e .env.production prisma migrate deploy",
-    "reencrypt-tokens:dev": "dotenv -e .env.local -- bun --no-env-file scripts/reencrypt-access-tokens.ts",
-    "reencrypt-tokens:deploy": "dotenv -e .env.production -- bun --no-env-file scripts/reencrypt-access-tokens.ts",
+    "reencrypt-tokens:dev": "vercel env run --environment development -- bun --no-env-file scripts/reencrypt-access-tokens.ts",
+    "reencrypt-tokens:deploy": "vercel env run --environment production -- bun --no-env-file scripts/reencrypt-access-tokens.ts",
+    "key:rotate": "bun --no-env-file scripts/rotate-access-token-key.ts rotate",
+    "key:retire": "bun --no-env-file scripts/rotate-access-token-key.ts retire",
     "refresh": "git pull && vc env pull"
   },
   "lint-staged": {

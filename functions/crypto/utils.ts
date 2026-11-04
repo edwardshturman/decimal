@@ -96,11 +96,13 @@ export function decryptAccessToken(cipherText: string, encryptionKey: string) {
 /*
  * Access tokens are encrypted under the current key, `KEY_IN_USE`, and each Item records the version of the key its token was encrypted under — the value of `KEY_VERSION` at the time.
  *
- * To rotate keys:
- * 1. Add the outgoing key to `PREVIOUS_KEYS` — a JSON object mapping key versions to base64 keys, e.g. `{"1":"…"}` — under its current `KEY_VERSION`
+ * Rotating keys takes four steps:
+ * 1. Add the outgoing key to `PREVIOUS_KEYS` (see `getPreviousKeys`) under its current `KEY_VERSION`
  * 2. Set `KEY_IN_USE` to the new key, and `KEY_VERSION` to a new version
  * 3. Run `scripts/reencrypt-access-tokens.ts` to move every Item onto the new key
  * 4. Once it reports no Items left on an old version, drop that version from `PREVIOUS_KEYS`
+ *
+ * `bun run key:rotate` automates steps 1–3 against the Vercel project, and `bun run key:retire` step 4 — see `scripts/rotate-access-token-key.ts`.
  */
 
 /**
@@ -112,7 +114,10 @@ export function getCurrentKeyVersion() {
   return version
 }
 
-function getCurrentKey() {
+/**
+ * @returns the base64 key new access tokens are encrypted under
+ */
+export function getCurrentKey() {
   const key = process.env.KEY_IN_USE
   if (!key) throw new Error("Missing KEY_IN_USE!")
   return key
@@ -121,9 +126,27 @@ function getCurrentKey() {
 /**
  * Parses `PREVIOUS_KEYS`, the keys rotated out of use that Items may still have tokens encrypted under.
  *
+ * It's a JSON object mapping each key version to its base64 key. For example, with `KEY_VERSION` at `3`, and Items still on versions `1` and `2`:
+ *
+ * ```json
+ * {
+ *   "1": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+ *   "2": "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="
+ * }
+ * ```
+ *
+ * As an env var, that's the same object on one line:
+ *
+ * ```
+ * PREVIOUS_KEYS={"1":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","2":"AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="}
+ * ```
+ *
+ * Unset, or `{}`, when no Items are on an old key.
+ * It may include the current `KEY_VERSION` only with the same key as `KEY_IN_USE`, as it does partway through a rotation.
+ *
  * @returns a map of key version to base64 key
  */
-function getPreviousKeys() {
+export function getPreviousKeys() {
   const previousKeys = new Map<string, string>()
   const raw = process.env.PREVIOUS_KEYS
   if (!raw) return previousKeys
@@ -147,11 +170,13 @@ function getPreviousKeys() {
     previousKeys.set(version, key)
   }
 
-  // The same version naming two keys would make it ambiguous which one a token was encrypted under
+  // The same version naming two different keys would make it ambiguous which one a token was encrypted under.
+  // Naming the same key twice is harmless, and happens partway through a rotation, once the outgoing key is in PREVIOUS_KEYS but before KEY_IN_USE is replaced.
   const currentVersion = getCurrentKeyVersion()
-  if (previousKeys.has(currentVersion))
+  const keyForCurrentVersion = previousKeys.get(currentVersion)
+  if (keyForCurrentVersion && keyForCurrentVersion !== getCurrentKey())
     throw new Error(
-      `PREVIOUS_KEYS must not include the current KEY_VERSION, "${currentVersion}"!`
+      `PREVIOUS_KEYS has a different key for the current KEY_VERSION, "${currentVersion}"!`
     )
 
   return previousKeys
