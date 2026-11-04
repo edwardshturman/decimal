@@ -40,7 +40,11 @@ This project (named Decimal, for the moment) is a minimalist, web-based expense 
 - Plaid SDK wrapper functions (Link token exchange, calling endpoints like Transactions Sync, etc.) are stored in `functions/plaid.ts`
 - The data layer, one file per model, is written in `db/`
 - The database schema configuration & migrations are in `prisma/`
-- Plaid access tokens are encrypted with AES-256-GCM in `crypto/utils.ts`
+- Plaid access tokens are encrypted with AES-256-GCM in `functions/crypto/utils.ts`
+  - New tokens are encrypted under `KEY_IN_USE`, and each Item records the key's version (`KEY_VERSION`) as its `encryptionKeyVersion`
+  - Decrypt Item tokens only through `decryptItemAccessToken`, which picks the key for the Item's version — older keys live in `PREVIOUS_KEYS`
+  - Key rotation is scripted; see the README
+- Operational scripts (key rotation, re-encrypting tokens) are in `scripts/`, run through package scripts that load env from Vercel with `vercel env run`
 - Some shared utilities like constants & authentication can be found in `lib/`
 
 ### Data model

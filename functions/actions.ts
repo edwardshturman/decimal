@@ -25,7 +25,7 @@ import {
 } from "@/functions/db/accounts"
 import {
   decryptItemAccessToken,
-  encryptAccessToken
+  encryptItemAccessToken
 } from "@/functions/crypto/utils"
 import { after } from "next/server"
 import { revalidatePath } from "next/cache"
@@ -49,16 +49,10 @@ export async function exchangePublicTokenForAccessTokenServerAction(
 
   const { item, accounts } = await getAccountsFromPlaid({ accessToken })
 
-  const encryptionKey = process.env.KEY_IN_USE!
-  const keyVersion = process.env.KEY_VERSION!
-  const { cipherText: encryptedAccessToken, keyVersion: encryptionKeyVersion } =
-    encryptAccessToken(accessToken, encryptionKey, keyVersion)
-
   const createItemInput = {
     id: item.item_id,
     userId,
-    accessToken: encryptedAccessToken,
-    encryptionKeyVersion,
+    ...encryptItemAccessToken(accessToken),
     institutionId: item.institution_id || ""
   }
 

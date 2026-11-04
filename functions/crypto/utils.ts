@@ -85,45 +85,138 @@ export class GCM {
   }
 }
 
-export function encryptAccessToken(
-  plainText: string,
-  encryptionKey: string,
-  encryptionKeyVersion: string
-): {
-  cipherText: string
-  keyVersion: string
-} {
-  // GCM class handles missing/invalid keys, but version is also a must
-  if (!encryptionKey || !encryptionKeyVersion)
-    throw new Error("Missing encryption key or key version!")
-
-  // Encrypt token prior to DB insert
-  const encrypted = new GCM(encryptionKey).encrypt(plainText)
-
-  return { cipherText: encrypted, keyVersion: encryptionKeyVersion }
+export function encryptAccessToken(plainText: string, encryptionKey: string) {
+  return new GCM(encryptionKey).encrypt(plainText)
 }
 
-export function decryptAccessToken(
-  cipherText: string,
-  encryptionKey: string,
-  encryptionKeyVersion: string
-): {
-  plainText: string
-  keyVersion: string
-} {
-  // GCM class handles missing/invalid keys, but version is also a must
-  if (!encryptionKey || !encryptionKeyVersion)
-    throw new Error("Missing encryption key or key version!")
+export function decryptAccessToken(cipherText: string, encryptionKey: string) {
+  return new GCM(encryptionKey).decrypt(cipherText)
+}
 
-  // Encrypt token prior to DB insert
-  const decrypted = new GCM(encryptionKey).decrypt(cipherText)
+/*
+ * Access tokens are encrypted under the current key, `KEY_IN_USE`, and each Item records the version of the key its token was encrypted under — the value of `KEY_VERSION` at the time.
+ *
+ * Rotating keys takes four steps:
+ * 1. Add the outgoing key to `PREVIOUS_KEYS` (see `getPreviousKeys`) under its current `KEY_VERSION`
+ * 2. Set `KEY_IN_USE` to the new key, and `KEY_VERSION` to a new version
+ * 3. Run `scripts/reencrypt-access-tokens.ts` to move every Item onto the new key
+ * 4. Once it reports no Items left on an old version, drop that version from `PREVIOUS_KEYS`
+ *
+ * `bun run key:rotate` automates steps 1–3 against the Vercel project, and `bun run key:retire` step 4 — see `scripts/rotate-access-token-key.ts`.
+ */
 
-  return { plainText: decrypted, keyVersion: encryptionKeyVersion }
+/**
+ * @returns the version of the key new access tokens are encrypted under
+ */
+export function getCurrentKeyVersion() {
+  const version = process.env.KEY_VERSION
+  if (!version) throw new Error("Missing KEY_VERSION!")
+  return version
 }
 
 /**
- * Decrypts the access token stored on an Item.
- * Every Item token is decrypted through here, so that choosing the key by the Item's `encryptionKeyVersion` — needed before keys can be rotated — is a change in one place.
+ * @returns the base64 key new access tokens are encrypted under
+ */
+export function getCurrentKey() {
+  const key = process.env.KEY_IN_USE
+  if (!key) throw new Error("Missing KEY_IN_USE!")
+  return key
+}
+
+/**
+ * Parses `PREVIOUS_KEYS`, the keys rotated out of use that Items may still have tokens encrypted under.
+ *
+ * It's a JSON object mapping each key version to its base64 key. For example, with `KEY_VERSION` at `3`, and Items still on versions `1` and `2`:
+ *
+ * ```json
+ * {
+ *   "1": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+ *   "2": "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="
+ * }
+ * ```
+ *
+ * As an env var, that's the same object on one line:
+ *
+ * ```
+ * PREVIOUS_KEYS={"1":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","2":"AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="}
+ * ```
+ *
+ * Unset, or `{}`, when no Items are on an old key.
+ * It may include the current `KEY_VERSION` only with the same key as `KEY_IN_USE`, as it does partway through a rotation.
+ *
+ * @returns a map of key version to base64 key
+ */
+export function getPreviousKeys() {
+  const previousKeys = new Map<string, string>()
+  const raw = process.env.PREVIOUS_KEYS
+  if (!raw) return previousKeys
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    throw new Error("PREVIOUS_KEYS is not valid JSON!")
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed))
+    throw new Error(
+      "PREVIOUS_KEYS must be a JSON object mapping key versions to base64 keys!"
+    )
+
+  for (const [version, key] of Object.entries(parsed)) {
+    if (typeof key !== "string")
+      throw new Error(
+        `PREVIOUS_KEYS has a non-string key for version "${version}"!`
+      )
+    previousKeys.set(version, key)
+  }
+
+  // The same version naming two different keys would make it ambiguous which one a token was encrypted under.
+  // Naming the same key twice is harmless, and happens partway through a rotation, once the outgoing key is in PREVIOUS_KEYS but before KEY_IN_USE is replaced.
+  const currentVersion = getCurrentKeyVersion()
+  const keyForCurrentVersion = previousKeys.get(currentVersion)
+  if (keyForCurrentVersion && keyForCurrentVersion !== getCurrentKey())
+    throw new Error(
+      `PREVIOUS_KEYS has a different key for the current KEY_VERSION, "${currentVersion}"!`
+    )
+
+  return previousKeys
+}
+
+/**
+ * @param version the key version recorded on an Item
+ * @returns the base64 key for that version
+ */
+function getKeyForVersion(version: string) {
+  if (version === getCurrentKeyVersion()) return getCurrentKey()
+
+  const key = getPreviousKeys().get(version)
+  if (!key)
+    throw new Error(
+      `No encryption key for version "${version}" — add it to PREVIOUS_KEYS. Was it retired before every Item using it was re-encrypted?`
+    )
+  return key
+}
+
+/**
+ * Encrypts an access token under the current key, for storing on an Item.
+ *
+ * @param accessToken the plaintext access token
+ * @returns the Item fields to store: the encrypted token, and the version of the key it was encrypted under
+ */
+export function encryptItemAccessToken(
+  accessToken: string
+): Pick<Item, "accessToken" | "encryptionKeyVersion"> {
+  return {
+    accessToken: encryptAccessToken(accessToken, getCurrentKey()),
+    encryptionKeyVersion: getCurrentKeyVersion()
+  }
+}
+
+/**
+ * Decrypts the access token stored on an Item, with the key for the Item's `encryptionKeyVersion`.
+ * Every Item token is decrypted through here.
+ *
+ * Throws if no key is configured for that version. That's a deployment misconfiguration rather than anything wrong with the Item — and reconnecting couldn't fix it, since update mode needs the token too — so callers let it propagate instead of recording it against the Item the way they do a Plaid error.
  *
  * @param item the Item whose access token to decrypt, as stored in the database
  * @returns the plaintext access token
@@ -131,11 +224,8 @@ export function decryptAccessToken(
 export function decryptItemAccessToken(
   item: Pick<Item, "accessToken" | "encryptionKeyVersion">
 ) {
-  const encryptionKey = process.env.KEY_IN_USE!
-  const { plainText } = decryptAccessToken(
+  return decryptAccessToken(
     item.accessToken,
-    encryptionKey,
-    item.encryptionKeyVersion
+    getKeyForVersion(item.encryptionKeyVersion)
   )
-  return plainText
 }
